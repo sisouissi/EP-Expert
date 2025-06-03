@@ -1,0 +1,5 @@
+{
+  "name": "PE Decision Support Tool",
+  "description": "An application to assist healthcare professionals in the diagnosis and management of Pulmonary Embolism based on clinical scores and guidelines.",
+  "requestFramePermissions": []
+}
