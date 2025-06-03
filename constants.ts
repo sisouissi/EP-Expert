@@ -73,10 +73,10 @@ export const WELLS_CRITERIA_ITEMS: FormItem[] = [
 export const PERC_CRITERIA_ITEMS: FormItem[] = [
   { key: 'ageOver50', label: 'Âge ≥ 50 ans', auto: (data) => parseInt(data.age) >= 50 },
   { key: 'hrOver100', label: 'FC ≥ 100 bpm', auto: (data) => parseInt(data.heartRate) >= 100 },
-  { key: 'oxygenSat' as any, label: 'SpO2 < 95% à l\'air ambiant', auto: (data) => parseFloat(data.oxygenSat) < 95 },
+  { key: 'oxygenSat' as any, label: 'SpO2 &lt; 95% à l\'air ambiant', auto: (data) => parseFloat(data.oxygenSat) < 95 },
   { key: 'legSwelling', label: 'Œdème unilatéral de jambe' },
   { key: 'hemoptysis', label: 'Hémoptysie' }, // Repeated from Wells, but part of PERC
-  { key: 'recentSurgery', label: 'Chirurgie ou traumatisme récent (<4 semaines)' },
+  { key: 'recentSurgery', label: 'Chirurgie ou traumatisme récent (&lt;4 semaines)' },
   { key: 'priorVTE', label: 'Antécédent de TVP/EP' }, // Repeated
   { key: 'hormones', label: 'Prise d\'œstrogènes' }
 ];
@@ -88,14 +88,14 @@ export const YEARS_CRITERIA_ITEMS: FormItem[] = [
 ];
 
 export const HESTIA_CRITERIA_ITEMS: FormItem[] = [
-    { key: 'hemodynamicallyUnstable', label: 'Instabilité hémodynamique (PAS <100 mmHg ou FC >100 bpm)' },
+    { key: 'hemodynamicallyUnstable', label: 'Instabilité hémodynamique (PAS &lt;100 mmHg ou FC &gt;100 bpm)' },
     { key: 'thrombolysisNeeded', label: 'Thrombolyse ou embolectomie nécessaire' },
-    { key: 'activeBleeding', label: 'Saignement actif ou risque hémorragique élevé (ex: plaquettes < 75 G/L, TA > 180/110 non contrôlée)' },
-    { key: 'oxygenNeeded', label: 'Oxygénothérapie >24h pour maintenir SpO2 >90% (ou >92-95% si patho respi chronique)' },
+    { key: 'activeBleeding', label: 'Saignement actif ou risque hémorragique élevé (ex: plaquettes &lt; 75 G/L, TA &gt; 180/110 non contrôlée)' },
+    { key: 'oxygenNeeded', label: 'Oxygénothérapie &gt;24h pour maintenir SpO2 &gt;90% (ou &gt;92-95% si patho respi chronique)' },
     { key: 'peOnAnticoag', label: 'EP diagnostiquée sous anticoagulation curative' },
-    { key: 'severePain', label: 'Douleur sévère nécessitant analgésiques IV >24h' },
-    { key: 'socialReasons', label: 'Raison médicale ou sociale nécessitant admission >24h (ex: absence de soutien à domicile, comorbidités importantes)' },
-    { key: 'renalImpairment', label: 'Clairance créatinine <30 mL/min' },
+    { key: 'severePain', label: 'Douleur sévère nécessitant analgésiques IV &gt;24h' },
+    { key: 'socialReasons', label: 'Raison médicale ou sociale nécessitant admission &gt;24h (ex: absence de soutien à domicile, comorbidités importantes)' },
+    { key: 'renalImpairment', label: 'Clairance créatinine &lt;30 mL/min' },
     { key: 'liverImpairment', label: 'Insuffisance hépatique sévère (Child-Pugh C)' },
     { key: 'pregnantHestia', label: 'Grossesse' },
     { key: 'hitHistory', label: 'Antécédent de thrombopénie induite à l\'héparine (TIH)' }
@@ -114,12 +114,12 @@ export const CTPA_FINDINGS_OPTIONS = [
   { value: 'segmental', label: 'Embolie segmentaire' },
   { value: 'subsegmental', label: 'Embolie sous-segmentaire' },
   { value: 'bilateral', label: 'Embolie bilatérale' },
-  { value: 'massive', label: 'Embolie massive (>50% lit vasculaire)' },
+  { value: 'massive', label: 'Embolie massive (&gt;50% lit vasculaire)' },
 ];
 
 export const RENAL_FUNCTION_OPTIONS = [
   { value: '', label: 'Sélectionner' },
   { value: 'normal', label: 'Normale (ClCr ≥ 50 mL/min)' },
   { value: 'moderate', label: 'Modérément altérée (ClCr 30-49 mL/min)' },
-  { value: 'severe', label: 'Sévèrement altérée (ClCr < 30 mL/min)' },
+  { value: 'severe', label: 'Sévèrement altérée (ClCr &lt; 30 mL/min)' },
 ];

@@ -34,7 +34,7 @@ const App: React.FC = () => {
     let wellsCategory = '';
     if (wellsScore <= 1) wellsCategory = 'Faible (≤1)';
     else if (wellsScore <= 6) wellsCategory = 'Modérée (2-6)';
-    else wellsCategory = 'Élevée (>6)';
+    else wellsCategory = 'Élevée (&gt;6)';
 
 
     // PERC Score
@@ -159,7 +159,7 @@ const App: React.FC = () => {
        <Checkbox
         key={item.key as string}
         id={item.key as string}
-        label={<span className="text-sm text-slate-700">{item.label} {item.points && <span className={`font-semibold text-${color}-600`}>(+{item.points})</span>}</span>}
+        label={<span className="text-sm text-slate-700" dangerouslySetInnerHTML={{ __html: item.label + (item.points ? ` <span class="font-semibold text-${color}-600">(+${item.points})</span>` : '') }}></span>}
         checked={isChecked}
         onChange={(e) => !item.auto && handleInputChange(item.key, e.target.checked)}
         disabled={!!item.auto}
@@ -277,7 +277,7 @@ const App: React.FC = () => {
              <Checkbox
                 key="wellsHeartRate"
                 id="wellsHeartRate"
-                label={<span className="text-sm text-slate-700">Fréquence cardiaque > 100 bpm <span className="font-semibold text-sky-600">(+1.5)</span></span>}
+                label={<span className="text-sm text-slate-700">Fréquence cardiaque &gt; 100 bpm <span className="font-semibold text-sky-600">(+1.5)</span></span>}
                 checked={parseInt(clinicalData.heartRate) > 100}
                 disabled
                 className="mr-2 h-4 w-4 text-sky-600 focus:ring-sky-500 border-slate-300 rounded"
@@ -423,7 +423,7 @@ const App: React.FC = () => {
                 nextStepInfo = `Seuil: ${results.ddimerThreshold.toFixed(2)} ${clinicalData.ddimerUnit} FEU. Si négatifs, EP exclue. Si positifs, CTPA.`;
             }
         } else { // results.wellsCategory === 'Élevée (>6)'
-            recommendation = 'Probabilité élevée (Wells > 6). Angioscanner pulmonaire (CTPA) direct recommandé.';
+            recommendation = 'Probabilité élevée (Wells &gt; 6). Angioscanner pulmonaire (CTPA) direct recommandé.';
             alertTypeMain = 'error';
             nextStepInfo = 'Procéder immédiatement au CTPA sans D-dimères préalables.';
         }
@@ -513,7 +513,7 @@ const App: React.FC = () => {
      let riskCategoryDisplay: React.ReactNode = null;
 
      if (isHighRiskInput) {
-        riskCategoryDisplay = <AlertBox type="error" title="RISQUE ÉLEVÉ (Instabilité Hémodynamique)" message={<><p className="mb-1">Choc ou hypotension. Risque de mortalité précoce > 15%.</p> <strong className="mt-1 block">Recommandation : Thrombolyse systémique ou embolectomie en urgence. Anticoagulation (HNF). Soins intensifs.</strong></>} />;
+        riskCategoryDisplay = <AlertBox type="error" title="RISQUE ÉLEVÉ (Instabilité Hémodynamique)" message={<><p className="mb-1">Choc ou hypotension. Risque de mortalité précoce &gt; 15%.</p> <strong className="mt-1 block">Recommandation : Thrombolyse systémique ou embolectomie en urgence. Anticoagulation (HNF). Soins intensifs.</strong></>} />;
      } else if (hasRVDysfunction && hasBiomarkers) {
         riskCategoryDisplay = <AlertBox type="warning" title="RISQUE INTERMÉDIAIRE-ÉLEVÉ" message={<><p className="mb-1">Stabilité hémodynamique MAIS dysfonction VD ET biomarqueurs positifs. Risque de mortalité 3-15%.</p><strong className="mt-1 block">Recommandation : Anticoagulation. Hospitalisation. Surveillance rapprochée. Discuter thrombolyse de sauvetage ou ttt. percutané si dégradation.</strong></>} />;
      } else if (hasRVDysfunction || hasBiomarkers) {
@@ -533,7 +533,7 @@ const App: React.FC = () => {
                 <SectionCard title="Stabilité Hémodynamique">
                     <div className="space-y-5">
                         <Input label="Pression Artérielle Systolique (PAS, mmHg)" type="number" value={clinicalData.sbp} onChange={(e) => handleInputChange('sbp', e.target.value)} placeholder="Ex: 120" />
-                        <Checkbox label="Choc cardiogénique ou hypotension persistante (PAS < 90 mmHg, ou chute > 40 mmHg > 15 min, non due à arythmie/hypovolémie/sepsis)" checked={clinicalData.hemodynamicallyUnstable} onChange={(e) => handleInputChange('hemodynamicallyUnstable', e.target.checked)} />
+                        <Checkbox label="Choc cardiogénique ou hypotension persistante (PAS &lt; 90 mmHg, ou chute &gt; 40 mmHg &gt; 15 min, non due à arythmie/hypovolémie/sepsis)" checked={clinicalData.hemodynamicallyUnstable} onChange={(e) => handleInputChange('hemodynamicallyUnstable', e.target.checked)} />
                         {clinicalData.sbp !== '' && parseInt(clinicalData.sbp) < 90 && !clinicalData.hemodynamicallyUnstable && 
                             <p className="text-sm text-red-600 p-2 bg-red-50 rounded-md border border-red-200">Note: PAS actuelle &lt; 90 mmHg indique une instabilité.</p>}
                     </div>
@@ -636,8 +636,8 @@ const App: React.FC = () => {
                     {patientType === 'pregnant' && (
                          <AlertBox type="info" title="🤰 EP et Grossesse/Post-partum" message="HBPM à dose thérapeutique (ajustée au poids, surveillance anti-Xa possible) pendant toute la grossesse et au moins 6 semaines post-partum (total min. 3 mois). AVK et AOD contre-indiqués pendant la grossesse. HNF si risque hémorragique majeur ou accouchement imminent." />
                     )}
-                    {clinicalData.renalFunction === 'severe' && (
-                        <AlertBox type="warning" title="🧊 EP et Insuffisance Rénale Sévère (ClCr < 30 mL/min)" message="HNF IV avec monitoring TCA. HBPM : prudence, réduction de dose et/ou surveillance anti-Xa. Certains AOD contre-indiqués ou nécessitent réduction majeure (Apixaban 2.5mg x2/j si ClCr 15-29 + ≥2 critères [âge ≥80, poids ≤60kg]). AVK possibles." />
+                    {clinicalData.renalFunction === 'severe' && ( 
+                        <AlertBox type="warning" title="🧊 EP et Insuffisance Rénale Sévère (ClCr &lt; 30 mL/min)" message="HNF IV avec monitoring TCA. HBPM : prudence, réduction de dose et/ou surveillance anti-Xa. Certains AOD contre-indiqués ou nécessitent réduction majeure (Apixaban 2.5mg x2/j si ClCr 15-29 + ≥2 critères [âge ≥80, poids ≤60kg]). AVK possibles." />
                     )}
                 </div>
             </SectionCard>
@@ -699,7 +699,7 @@ const App: React.FC = () => {
                             <Checkbox
                                 key={item.key as string}
                                 id={`hestia_${item.key as string}`}
-                                label={<span className="text-sm text-slate-700">{item.label}</span>}
+                                label={<span className="text-sm text-slate-700" dangerouslySetInnerHTML={{ __html: item.label }}></span>}
                                 checked={isChecked}
                                 onChange={(e) => handleInputChange(item.key, e.target.checked)}
                                 // Disable if auto-checked by other state
