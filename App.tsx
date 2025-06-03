@@ -810,7 +810,7 @@ const App: React.FC = () => {
        <footer className="text-center text-xs text-slate-500 mt-8 py-6 border-t border-slate-200 px-4">
         <p className="mb-1">Application développée par Dr Zouhair Souissi © 2025 PE-Expert.</p>
         <p className="mb-1">
-            Référence : Managing Pulmonary Embolism. Ann Emerg Med. 2023;82(3):394-402.
+            Référence : <a href="https://www.annemergmed.com/article/S0196-0644(23)00033-1/pdf" target="_blank" rel="noopener noreferrer" className="text-sky-600 hover:text-sky-800 hover:underline">Managing Pulmonary Embolism. Ann Emerg Med. 2023;82(3):394-402.</a>
         </p>
         
       </footer>
