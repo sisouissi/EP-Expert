@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { ChevronRight, ChevronLeft, Heart, Stethoscope, AlertTriangle, CheckCircle, XCircle, Info, Calculator, FileText, Home, User, Baby, Activity, ShieldCheck, UserCheck, PlusCircle, ShieldAlert, RadioTower, TestTube2, Pill, Clock, HelpCircle, CalendarDays, ListChecks, Microscope } from 'lucide-react';
-import { ClinicalData, Results, PatientType, Step, FormItem, AnticoagulantMonitoringInfo } from './types';
-import { INITIAL_CLINICAL_DATA, INITIAL_RESULTS, DDIMER_UNITS, WELLS_CRITERIA_ITEMS, PERC_CRITERIA_ITEMS, YEARS_CRITERIA_ITEMS, HESTIA_CRITERIA_ITEMS, GENDER_OPTIONS, CTPA_FINDINGS_OPTIONS, RENAL_FUNCTION_OPTIONS, ANTICOAGULANT_OPTIONS, TREATMENT_DOSING, TREATMENT_DURATION_GUIDELINES, MONITORING_DATA } from './constants';
+import { ChevronRight, ChevronLeft, Heart, Stethoscope, AlertTriangle, CheckCircle, XCircle, Info, Calculator, FileText, Home, User, Baby, Activity, ShieldCheck, UserCheck, PlusCircle, ShieldAlert, RadioTower, TestTube2, Pill, Clock, HelpCircle, CalendarDays, ListChecks, Microscope, Printer, BookOpen, X } from 'lucide-react';
+import { ClinicalData, Results, PatientType, Step, FormItem, AnticoagulantMonitoringInfo, Abbreviation } from './types';
+import { INITIAL_CLINICAL_DATA, INITIAL_RESULTS, DDIMER_UNITS, WELLS_CRITERIA_ITEMS, PERC_CRITERIA_ITEMS, YEARS_CRITERIA_ITEMS, HESTIA_CRITERIA_ITEMS, GENDER_OPTIONS, CTPA_FINDINGS_OPTIONS, RENAL_FUNCTION_OPTIONS, ANTICOAGULANT_OPTIONS, TREATMENT_DOSING, TREATMENT_DURATION_GUIDELINES, MONITORING_DATA, ABBREVIATIONS_LIST } from './constants';
 import { Input, Select, Checkbox } from './components/shared/FormElements';
 import { SectionCard } from './components/shared/SectionCard';
 import { AlertBox } from './components/shared/AlertBox';
@@ -12,12 +12,18 @@ const App: React.FC = () => {
   const [patientType, setPatientType] = useState<PatientType>('');
   const [clinicalData, setClinicalData] = useState<ClinicalData>(INITIAL_CLINICAL_DATA);
   const [results, setResults] = useState<Results>(INITIAL_RESULTS);
+  const [showAbbreviationsModal, setShowAbbreviationsModal] = useState<boolean>(false);
+
 
   const resetState = useCallback(() => {
+    // Preserve patient name if user wants to start a new case for the same patient
+    // but reset everything else. Or clear it if it's a truly new patient.
+    // For now, let's clear it for a full reset. User can re-enter.
     setClinicalData(INITIAL_CLINICAL_DATA);
     setResults(INITIAL_RESULTS);
     setPatientType('');
     setCurrentStep('home');
+    setShowAbbreviationsModal(false);
   }, []);
 
   const calculateScores = useCallback(() => {
@@ -66,34 +72,26 @@ const App: React.FC = () => {
     if (patientType === 'active-cancer') {
         ddimerThresholdValue = baseAgeAdjustedDdimerCutoff;
     } else if (patientType === 'pregnant') {
-        // For pregnant patients, YEARS criteria adjust the threshold (Page 5 logic from user context, simplified)
-        // If any YEARS criteria is positive, use standard age-adjusted. Otherwise, use higher threshold (1.0 mg/L FEU or age-adjusted).
-        // This interpretation might need refinement based on specific guidelines for pregnancy + YEARS.
-        // The provided PDF algorithm for pregnant (page 5) doesn't explicitly use YEARS for D-dimer threshold,
-        // it goes to bilateral lower limb doppler if leg symptoms, or Chest X-ray/CTPA.
-        // For simplicity, we'll use the non-pregnant YEARS logic for D-dimer if it were to be used.
-        // However, the diagnostic flow for pregnancy often bypasses D-dimer or uses it differently.
-        // For now, let's assume if D-dimer *were* used with YEARS for pregnancy:
-        if (results.yearsCriteriaMet === 0) { // 0 YEARS criteria
+        if (results.yearsCriteriaMet === 0) { 
             ddimerThresholdValue = Math.max(1.0, baseAgeAdjustedDdimerCutoff);
-        } else { // 1 or more YEARS criteria
+        } else { 
             ddimerThresholdValue = Math.max(0.5, baseAgeAdjustedDdimerCutoff);
         }
     } else { // Non-pregnant, non-cancer
-         if (wellsScore <= 1) { // Low Wells: PERC applies. If PERC positive, D-dimer with YEARS/Age adjustment
+         if (wellsScore <= 1) { 
             if (results.yearsCriteriaMet === 0) {
                 ddimerThresholdValue = Math.max(1.0, baseAgeAdjustedDdimerCutoff);
             } else {
                 ddimerThresholdValue = Math.max(0.5, baseAgeAdjustedDdimerCutoff);
             }
-        } else if (wellsScore <= 6 ) { // Moderate Wells: D-dimer with YEARS/Age adjustment
+        } else if (wellsScore <= 6 ) { 
              if (results.yearsCriteriaMet === 0) {
                 ddimerThresholdValue = Math.max(1.0, baseAgeAdjustedDdimerCutoff);
             } else {
                 ddimerThresholdValue = Math.max(0.5, baseAgeAdjustedDdimerCutoff);
             }
         }
-         else { // High Wells: D-dimer usually skipped or standard age-adjusted
+         else { 
             ddimerThresholdValue = baseAgeAdjustedDdimerCutoff;
         }
     }
@@ -102,15 +100,15 @@ const App: React.FC = () => {
 
     // Hestia Score
     let hestiaScore = 0;
-    if (clinicalData.hemodynamicallyUnstable || (clinicalData.sbp !== '' && parseInt(clinicalData.sbp) < 100) || (clinicalData.heartRate !== '' && parseInt(clinicalData.heartRate) > 100) ) hestiaScore++; // Hestia specific instability definition
+    if (clinicalData.hemodynamicallyUnstable || (clinicalData.sbp !== '' && parseInt(clinicalData.sbp) < 100) || (clinicalData.heartRate !== '' && parseInt(clinicalData.heartRate) > 100) ) hestiaScore++; 
     if (clinicalData.thrombolysisNeeded) hestiaScore++;
-    if (clinicalData.activeBleeding) hestiaScore++; // Hestia: active bleed or high risk (plt <75, uncontrolled HTN >180/110)
-    if (clinicalData.oxygenNeeded || (clinicalData.oxygenSat !== '' && parseFloat(clinicalData.oxygenSat) < 90)) hestiaScore++; // Hestia: O2 >24h for SpO2 >90%
+    if (clinicalData.activeBleeding) hestiaScore++; 
+    if (clinicalData.oxygenNeeded || (clinicalData.oxygenSat !== '' && parseFloat(clinicalData.oxygenSat) < 90)) hestiaScore++; 
     if (clinicalData.peOnAnticoag) hestiaScore++;
-    if (clinicalData.severePain) hestiaScore++; // Hestia: IV analgesia > 24h
+    if (clinicalData.severePain) hestiaScore++; 
     if (clinicalData.socialReasons) hestiaScore++;
-    if (clinicalData.renalImpairment || clinicalData.renalFunction === 'severe') hestiaScore++; // Hestia: ClCr <30
-    if (clinicalData.liverImpairment) hestiaScore++; // Hestia: Child-Pugh C
+    if (clinicalData.renalImpairment || clinicalData.renalFunction === 'severe') hestiaScore++; 
+    if (clinicalData.liverImpairment) hestiaScore++; 
     if (clinicalData.pregnantHestia || clinicalData.pregnant) hestiaScore++;
     if (clinicalData.hitHistory) hestiaScore++;
     const outpatientEligible = hestiaScore === 0;
@@ -122,7 +120,7 @@ const App: React.FC = () => {
 
     if (isHighRiskHemodynamicallyUnstable) {
       peRiskLevelCalculated = 'high';
-    } else if (hasRVDysfunctionOrBiomarkers) { // Simplified intermediate: any RV dys or biomarker
+    } else if (hasRVDysfunctionOrBiomarkers) { 
       peRiskLevelCalculated = 'intermediate'; 
     } else {
       peRiskLevelCalculated = 'low';
@@ -142,7 +140,7 @@ const App: React.FC = () => {
     });
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [clinicalData, patientType]); 
+  }, [clinicalData, patientType, results.yearsCriteriaMet]); // Added results.yearsCriteriaMet because it's used in ddimerThresholdValue calculation
 
   useEffect(() => {
     calculateScores();
@@ -216,8 +214,182 @@ const App: React.FC = () => {
     );
   };
 
+  const handlePrintReport = () => {
+    const ddimerValue = parseFloat(clinicalData.ddimer);
+    const ddimerPresent = !isNaN(ddimerValue);
+    const ddimerIsPositive = ddimerPresent && ddimerValue >= results.ddimerThreshold;
+
+    let diagnosticRecText = 'Non déterminé'; // Placeholder
+    // Simplified determination of diagnostic recommendation for report
+    if (patientType === 'active-cancer') {
+        if (results.wellsScore <= 4) {
+            if (clinicalData.chestXraySuggestsOtherDiagnosis === true) diagnosticRecText = "Radio thoracique positive pour un autre diagnostic. Traiter cette condition.";
+            else if (clinicalData.chestXraySuggestsOtherDiagnosis === false) {
+                if (ddimerPresent) diagnosticRecText = ddimerIsPositive ? "CTPA recommandé (Wells ≤4, RxT non-diag, D-dimères +)." : "EP peu probable (Wells ≤4, RxT non-diag, D-dimères -).";
+                else diagnosticRecText = "D-dimères recommandés (Wells ≤4, RxT non-diag).";
+            } else diagnosticRecText = "Radio thoracique et D-dimères recommandés.";
+        } else diagnosticRecText = "CTPA direct recommandé (Wells ≥ 5).";
+    } else if (patientType === 'pregnant') {
+      diagnosticRecText = clinicalData.yearsDVT ? "Doppler MI recommandé. Si neg: considérer RxT puis CTPA/VQ." : "RxT puis CTPA/VQ si non diag. D-dimères peuvent aider.";
+      if(ddimerPresent){
+        diagnosticRecText += ddimerIsPositive ? " (D-dimères +)" : " (D-dimères -)";
+      }
+    } else {
+        if (results.wellsScore <= 1) {
+            if (!results.percPositive) diagnosticRecText = 'EP cliniquement exclue (Wells faible, PERC négatif).';
+            else diagnosticRecText = ddimerPresent ? (ddimerIsPositive ? 'CTPA recommandé (D-dimères +).' : 'EP exclue (D-dimères -).') : 'D-dimères recommandés (Wells faible, PERC positif).';
+        } else if (results.wellsScore <= 6) {
+            diagnosticRecText = ddimerPresent ? (ddimerIsPositive ? 'CTPA recommandé (D-dimères +).' : 'EP exclue (D-dimères -).') : 'D-dimères recommandés (Wells modéré).';
+        } else {
+            diagnosticRecText = 'CTPA direct recommandé (Wells élevé).';
+        }
+    }
+    
+    const isHighRiskInput = clinicalData.hemodynamicallyUnstable || (clinicalData.sbp !== '' && parseInt(clinicalData.sbp) < 90);
+    const hasRVDysfunction = clinicalData.rvDysfunction;
+    const hasBiomarkers = clinicalData.troponin || clinicalData.bnp;
+    let riskLevelText = "Non déterminé";
+    if (isHighRiskInput) riskLevelText = "RISQUE ÉLEVÉ (Instabilité Hémodynamique)";
+    else if (hasRVDysfunction && hasBiomarkers) riskLevelText = "RISQUE INTERMÉDIAIRE-ÉLEVÉ";
+    else if (hasRVDysfunction || hasBiomarkers) riskLevelText = "RISQUE INTERMÉDIAIRE-FAIBLE";
+    else riskLevelText = "RISQUE FAIBLE";
+
+
+    let treatmentRecText = "Basé sur le niveau de risque et le profil patient (voir application)."; // Placeholder
+    if (isHighRiskInput) treatmentRecText = "Reperfusion urgente (Thrombolyse/Embolectomie) + HNF IV. Soins intensifs.";
+    else if (patientType === 'active-cancer') treatmentRecText = "HBPM ou AODs spécifiques (Edoxaban, Rivaroxaban, Apixaban). Durée: indéfinie si cancer actif.";
+    else if (patientType === 'pregnant') treatmentRecText = `HBPM (${TREATMENT_DOSING.enoxaparin_pregnancy}). Durée: grossesse + 6 semaines post-partum.`;
+    else if (clinicalData.renalFunction === 'severe') treatmentRecText = "HNF IV ou AVK. HBPM/AODs avec prudence/ajustement majeur.";
+    else treatmentRecText = "AODs (1ère intention pour risque faible/intermédiaire-faible stable) ou HBPM/AVK. Durée selon provocation de l'EP.";
+    
+    let durationKey: keyof typeof TREATMENT_DURATION_GUIDELINES = 'unprovoked_first';
+    if (patientType === 'active-cancer') durationKey = 'cancer';
+    else if (patientType === 'pregnant') durationKey = 'pregnancy';
+    else if (clinicalData.peProvoked) durationKey = 'provoked_transient';
+    const durationText = TREATMENT_DURATION_GUIDELINES[durationKey];
+
+    const reportHTML = `
+      <html>
+        <head>
+          <title>Rapport Patient EP - ${clinicalData.patientName || 'N/A'}</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.6; font-size: 10pt; }
+            @page { size: A4; margin: 1cm; }
+            h1, h2, h3 { color: #333; margin-top: 1.5em; margin-bottom: 0.5em; }
+            h1 { font-size: 16pt; text-align: center; border-bottom: 2px solid #333; padding-bottom: 5px; }
+            h2 { font-size: 14pt; border-bottom: 1px solid #ccc; padding-bottom: 3px; }
+            h3 { font-size: 12pt; }
+            .section { margin-bottom: 15px; padding-left: 10px; }
+            .label { font-weight: bold; color: #555; }
+            p { margin: 0.3em 0; }
+            table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+            th, td { border: 1px solid #ddd; padding: 6px; text-align: left; font-size: 9pt; }
+            th { background-color: #f2f2f2; font-weight: bold; }
+            .value { margin-left: 5px; }
+            .alert { padding: 10px; margin-top: 10px; border-radius: 4px; }
+            .alert-info { background-color: #e7f3fe; border-left: 4px solid #2196F3; }
+            .alert-success { background-color: #e8f5e9; border-left: 4px solid #4CAF50; }
+            .alert-warning { background-color: #fff3e0; border-left: 4px solid #ff9800; }
+            .alert-error { background-color: #ffebee; border-left: 4px solid #f44336; }
+            .flex-container { display: flex; justify-content: space-between; }
+            .flex-item { width: 48%; }
+            ul { padding-left: 20px; margin: 0.3em 0; }
+          </style>
+        </head>
+        <body>
+          <h1>Rapport Embolie Pulmonaire</h1>
+          
+          <div class="section">
+            <h2>Identification du Patient</h2>
+            <p><span class="label">Nom:</span><span class="value">${clinicalData.patientName || 'Non spécifié'}</span></p>
+            <p><span class="label">Âge:</span><span class="value">${clinicalData.age || 'N/A'} ans</span></p>
+            <p><span class="label">Sexe:</span><span class="value">${clinicalData.gender || 'N/A'}</span></p>
+            <p><span class="label">Type de Patient:</span><span class="value">${patientType === 'non-pregnant' ? 'Standard' : patientType === 'pregnant' ? 'Enceinte' : 'Cancer Actif'}</span></p>
+          </div>
+
+          <div class="section">
+            <h2>Évaluation Clinique et Scores</h2>
+            <div class="flex-container">
+                <div class="flex-item">
+                    <p><span class="label">Score de Wells:</span><span class="value">${results.wellsScore.toFixed(1)} (${results.wellsCategory})</span></p>
+                    ${patientType !== 'pregnant' && patientType !== 'active-cancer' && results.wellsScore <= 1 ? `<p><span class="label">PERC:</span><span class="value">${results.percPositive ? `Positif (${results.percCriteriaMet} critère(s))` : 'Négatif'}</span></p>` : ''}
+                    ${patientType !== 'active-cancer' ? `<p><span class="label">Critères YEARS:</span><span class="value">${results.yearsCategory}</span></p>` : ''}
+                </div>
+                <div class="flex-item">
+                    ${ddimerPresent ? `<p><span class="label">D-Dimères:</span><span class="value">${clinicalData.ddimer} ${clinicalData.ddimerUnit} (Seuil: ${getDisplayDdimerThreshold()} ${clinicalData.ddimerUnit}) - ${ddimerIsPositive ? 'Positif' : 'Négatif'}</span></p>` : '<p><span class="label">D-Dimères:</span><span class="value">Non renseignés ou non applicables</span></p>'}
+                    ${patientType === 'active-cancer' && results.wellsScore <=4 ? `<p><span class="label">Rx Thoracique (Cancer, Wells ≤4):</span><span class="value">${clinicalData.chestXrayPerformed ? (clinicalData.chestXraySuggestsOtherDiagnosis === true ? 'Autre diagnostic' : clinicalData.chestXraySuggestsOtherDiagnosis === false ? 'Non-diagnostique' : 'Non interprétée') : 'Non réalisée'}</span></p>` : ''}
+                </div>
+            </div>
+          </div>
+          
+          <div class="section alert alert-info">
+            <h2>Recommandation Diagnostique Principale</h2>
+            <p>${diagnosticRecText}</p>
+            ${clinicalData.ctpaPerformedCancer && patientType === 'active-cancer' ? `<p><span class="label">Résultat CTPA (Cancer):</span> ${clinicalData.ctpaPositiveCancer ? 'Positif pour EP' : 'Négatif pour EP'}</p>` : ''}
+            ${clinicalData.peConfirmed && patientType !== 'active-cancer' ? `<p><span class="label">Confirmation EP par imagerie:</span> Oui</p>`: ''}
+          </div>
+
+          ${clinicalData.peConfirmed || (patientType === 'active-cancer' && clinicalData.ctpaPositiveCancer === true) ? `
+          <div class="section">
+            <h2>Stratification du Risque (EP Confirmée)</h2>
+            <p><span class="label">Stabilité Hémodynamique (PAS):</span><span class="value">${clinicalData.sbp || 'N/A'} mmHg ${clinicalData.hemodynamicallyUnstable ? '(Instable)' : '(Stable)'}</span></p>
+            <p><span class="label">Dysfonction VD:</span><span class="value">${clinicalData.rvDysfunction ? 'Oui' : 'Non'}</span></p>
+            <p><span class="label">Biomarqueurs Cardiaques (Troponine/BNP):</span><span class="value">${clinicalData.troponin || clinicalData.bnp ? 'Positifs' : 'Négatifs'}</span></p>
+            <div class="alert alert-warning">
+                <p><span class="label">Niveau de Risque ESC:</span><span class="value">${riskLevelText}</span></p>
+            </div>
+            <p><span class="label">Critères HESTIA (pour ambulatoire):</span><span class="value">${results.hestiaScore} positifs - ${results.outpatientEligible ? 'Ambulatoire Possible' : 'Hospitalisation Recommandée'}</span></p>
+          </div>
+
+          <div class="section alert alert-success">
+            <h2>Plan Thérapeutique</h2>
+            <p><span class="label">Recommandation Générale:</span><span class="value">${treatmentRecText}</span></p>
+            <p><span class="label">Durée du traitement:</span><span class="value">${durationText} (Facteur provoquant: ${clinicalData.peProvoked ? clinicalData.peProvokedFactorDetails || 'Oui' : 'Non'})</span></p>
+            <p><span class="label">Fonction Rénale:</span><span class="value">${clinicalData.renalFunction || 'N/A'}</span></p>
+            <p><span class="label">Risque Hémorragique élevé:</span><span class="value">${clinicalData.bleedingRisk ? 'Oui' : 'Non'}</span></p>
+          </div>
+          
+          <div class="section">
+            <h2>Suivi Recommandé</h2>
+            <p>Consulter le tableau de suivi biologique pour l'anticoagulant spécifique prescrit.</p>
+            <p>Suivi clinique régulier pour évaluer réponse, tolérance, observance, et symptômes persistants. Réévaluation à 3 mois pour la durée du traitement (sauf cas spécifiques).</p>
+          </div>
+          ` : `
+           <div class="section alert alert-info">
+            <p>La stratification du risque et le plan thérapeutique ne sont pas applicables ou l'EP n'est pas encore confirmée.</p>
+           </div>
+          `}
+           <p style="text-align:center; font-size: 8pt; margin-top: 30px;">Ce rapport est généré par EP-Expert et ne remplace pas le jugement clinique. Vérifiez toutes les informations. Date: ${new Date().toLocaleDateString()}</p>
+        </body>
+      </html>
+    `;
+    const reportWindow = window.open('', '_blank');
+    if (reportWindow) {
+      reportWindow.document.write(reportHTML);
+      reportWindow.document.close(); // Important for some browsers
+      reportWindow.focus(); // Required for some browsers to allow print
+      // Delay print to ensure content is loaded
+      setTimeout(() => {
+        reportWindow.print();
+      }, 500); 
+    }
+  };
+
+  const toggleAbbreviationsModal = () => setShowAbbreviationsModal(!showAbbreviationsModal);
+
   const renderHome = () => (
     <div className="max-w-5xl mx-auto animate-fadeIn px-4">
+       {clinicalData.patientName && patientType && ( // Display if a case was started
+        <div className="mb-8 text-center p-4 bg-sky-50 border border-sky-200 rounded-lg">
+          <p className="text-lg text-sky-700">Cas en cours pour : <span className="font-semibold">{clinicalData.patientName}</span> <span className="text-sm">({patientType === 'non-pregnant' ? 'Standard' : patientType === 'pregnant' ? 'Enceinte' : 'Cancer Actif'})</span></p>
+          <button 
+            onClick={() => setCurrentStep('clinical-assessment')}
+            className="mt-2 text-sm text-sky-600 hover:text-sky-800 font-medium underline"
+          >
+            Continuer l'évaluation
+          </button>
+        </div>
+      )}
       <div className="text-center mb-12 pt-8">
         <div className="inline-block p-4 bg-red-100 rounded-full mb-6">
           <Heart className="h-16 w-16 text-red-500" />
@@ -241,12 +413,16 @@ const App: React.FC = () => {
             className={`group relative text-left p-8 rounded-2xl shadow-xl hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-300 ease-in-out overflow-hidden bg-gradient-to-br ${pt.gradientFrom} ${pt.gradientTo} text-white focus:outline-none focus:ring-4 focus:ring-${pt.color}-400 focus:ring-opacity-50`}
             onClick={() => {
               setPatientType(pt.type as PatientType);
+              // Preserve patientName if it exists, otherwise reset relevant fields
+              const currentName = clinicalData.patientName;
+              const baseData = { ...INITIAL_CLINICAL_DATA, patientName: currentName };
+
               if (pt.type === 'pregnant') {
-                setClinicalData(prev => ({ ...prev, pregnant: true, gender: 'female', pregnantHestia: true, malignancy: false, chestXraySuggestsOtherDiagnosis: null, chestXrayPerformed: false }));
+                setClinicalData({ ...baseData, pregnant: true, gender: 'female', pregnantHestia: true, malignancy: false, chestXraySuggestsOtherDiagnosis: null, chestXrayPerformed: false });
               } else if (pt.type === 'active-cancer') {
-                setClinicalData(prev => ({ ...prev, malignancy: true, pregnant: false, pregnantHestia: false, chestXraySuggestsOtherDiagnosis: null, chestXrayPerformed: false }));
+                setClinicalData({ ...baseData, malignancy: true, pregnant: false, pregnantHestia: false, chestXraySuggestsOtherDiagnosis: null, chestXrayPerformed: false });
               } else {
-                 setClinicalData(prev => ({ ...prev, pregnant: false, pregnantHestia: false, malignancy: false, chestXraySuggestsOtherDiagnosis: null, chestXrayPerformed: false }));
+                 setClinicalData({ ...baseData, pregnant: false, pregnantHestia: false, malignancy: false, chestXraySuggestsOtherDiagnosis: null, chestXrayPerformed: false });
               }
               setCurrentStep('clinical-assessment');
             }}
@@ -322,6 +498,7 @@ const App: React.FC = () => {
       <div className="grid lg:grid-cols-3 gap-6">
         <SectionCard title="Données Démographiques" className="lg:col-span-1" icon={<User size={20}/>}>
           <div className="space-y-5">
+            <Input label="Nom du Patient (Optionnel)" type="text" value={clinicalData.patientName} onChange={(e) => handleInputChange('patientName', e.target.value)} placeholder="Prénom Nom" />
             <Input label="Âge (années)" type="number" value={clinicalData.age} onChange={(e) => handleInputChange('age', e.target.value)} placeholder="Ex: 45" />
             {patientType !== 'pregnant' && (
               <Select label="Sexe" value={clinicalData.gender} onChange={(e) => handleInputChange('gender', e.target.value as ClinicalData['gender'])} options={GENDER_OPTIONS} />
@@ -445,7 +622,6 @@ const App: React.FC = () => {
         )}
 
         {patientType !== 'active-cancer' && (
-             // Show D-dimer input unless it's cancer pathway with Wells <= 4 and RxT points to another diagnosis or RxT not done/answered.
             ((patientType === 'non-pregnant' && (results.wellsScore > 1 || (results.wellsScore <=1 && results.percPositive))) || patientType === 'pregnant') && 
             <SectionCard title="Dosage des D-dimères" className="lg:col-span-3" icon={<TestTube2 size={20}/>}>
             <div className="grid md:grid-cols-2 gap-6 items-end">
@@ -523,13 +699,11 @@ const App: React.FC = () => {
             nextStepInfo = 'Procéder au CTPA sans D-dimères préalables.';
         }
     } else if (patientType === 'pregnant') {
-        // Simplified logic for pregnancy based on Page 5 of PDF.
-        // This assumes direct referral to imaging or doppler based on symptoms, D-dimer role is complex.
-        if (clinicalData.yearsDVT) { // Approximating "Leg symptoms" from page 5
+        if (clinicalData.yearsDVT) { 
             recommendation = "Signes cliniques de TVP (ou symptômes de jambe). Échographie veineuse des membres inférieurs (Doppler de compression) recommandée en 1ère intention.";
             alertTypeMain = 'info';
             nextStepInfo = "Si écho positive pour TVP: traiter. Si écho négative: considérer Chest X-ray puis CTPA/VQ si X-ray non diagnostique et suspicion EP persiste. D-dimères peuvent être utiles si écho négative mais guidelines varient.";
-        } else { // No leg symptoms -> direct to Chest X-ray / CTPA path
+        } else { 
              recommendation = "Absence de signes de TVP manifestes. Recommandation typique : Chest X-ray. Si non diagnostique et suspicion EP persiste, CTPA ou Scintigraphie V/Q.";
              alertTypeMain = 'info';
              nextStepInfo = "D-dimères (seuil adapté YEARS/âge si utilisé : " + getDisplayDdimerThreshold() + " " + clinicalData.ddimerUnit + ") peuvent aider mais leur place est débattue en grossesse. Préférer imagerie si suspicion forte.";
@@ -544,12 +718,12 @@ const App: React.FC = () => {
              }
         }
     } else { // Non-pregnant, non-cancer patient logic
-        if (results.wellsScore <= 1) { // Wells Faible
+        if (results.wellsScore <= 1) { 
             if (!results.percPositive) { 
                 recommendation = 'Score de Wells faible ET critères PERC tous négatifs. EP cliniquement exclue.';
                 alertTypeMain = 'success';
                 nextStepInfo = 'Pas d\'examens complémentaires nécessaires pour EP. Rechercher un diagnostic alternatif.';
-            } else { // PERC Positif
+            } else { 
                 if (ddimerPresent) {
                     recommendation = ddimerIsPositive ? 'D-dimères positifs. Angioscanner pulmonaire (CTPA) recommandé.' : 'D-dimères négatifs. EP exclue.';
                     alertTypeMain = ddimerIsPositive ? 'warning' : 'success';
@@ -560,7 +734,7 @@ const App: React.FC = () => {
                     nextStepInfo = `Seuil adapté (YEARS/âge): ${getDisplayDdimerThreshold()} ${clinicalData.ddimerUnit}. Si négatifs, EP exclue. Si positifs, CTPA.`;
                 }
             }
-        } else if (results.wellsScore <= 6) { // Wells Modéré
+        } else if (results.wellsScore <= 6) { 
             if (ddimerPresent) {
                 recommendation = ddimerIsPositive ? 'D-dimères positifs. Angioscanner pulmonaire (CTPA) recommandé.' : 'D-dimères négatifs. EP exclue.';
                 alertTypeMain = ddimerIsPositive ? 'warning' : 'success';
@@ -570,7 +744,7 @@ const App: React.FC = () => {
                 alertTypeMain = 'info';
                 nextStepInfo = `Seuil adapté (YEARS/âge): ${getDisplayDdimerThreshold()} ${clinicalData.ddimerUnit}. Si négatifs, EP exclue. Si positifs, CTPA.`;
             }
-        } else { // results.wellsCategory === 'Élevée (>6)'
+        } else { 
             recommendation = 'Probabilité élevée (Wells &gt; 6). Angioscanner pulmonaire (CTPA) direct recommandé.';
             alertTypeMain = 'error';
             nextStepInfo = 'Procéder immédiatement au CTPA sans D-dimères préalables.';
@@ -609,7 +783,7 @@ const App: React.FC = () => {
                 </div>
             )}
 
-            {patientType !== 'active-cancer' && ( // Show YEARS for non-cancer, including pregnant for D-dimer threshold context
+            {patientType !== 'active-cancer' && ( 
                 <div className="p-5 bg-teal-50 rounded-xl shadow-md border border-teal-200">
                 <div className="flex items-center text-teal-700 mb-1">
                     <CalendarDays className="h-6 w-6 mr-2" /> <h4 className="font-semibold text-lg">Critères YEARS</h4>
@@ -683,7 +857,6 @@ const App: React.FC = () => {
               <button
                   onClick={() => {
                     handleInputChange('peConfirmed', true);
-                    // setCurrentStep('risk-stratification'); // Let user click next
                   }}
                   className="w-full flex items-center justify-center px-6 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 font-semibold text-md transition-colors shadow-md hover:shadow-lg"
               >
@@ -825,29 +998,13 @@ const App: React.FC = () => {
     if (patientType === 'active-cancer') durationKey = 'cancer';
     else if (patientType === 'pregnant') durationKey = 'pregnancy';
     else if (clinicalData.peProvoked) durationKey = 'provoked_transient';
-    // Could add logic for recurrent unprovoked if that data is collected
-
+    
     const getDrugList = (type: 'doacs' | 'lmwh' | 'warfarin' | 'ufh') => {
         if (patientType === 'pregnant') return ANTICOAGULANT_OPTIONS.pregnant[type as 'lmwh' | 'ufh'] || [];
         if (patientType === 'active-cancer') return ANTICOAGULANT_OPTIONS.cancer[type as 'lmwh' | 'doacs'] || [];
         return ANTICOAGULANT_OPTIONS.general[type] || [];
     }
-
-    const renderDrugCategory = (title: string, drugs: string[], specificDosing?: Record<string, string>) => (
-        <div className="p-4 bg-slate-50 rounded-lg border border-slate-200 mb-3">
-            <h4 className="font-semibold text-md text-sky-800 mb-2">{title}</h4>
-            <ul className="space-y-1.5">
-                {drugs.map(drug => (
-                    <li key={drug} className="text-sm text-slate-700">
-                        - {drug}
-                        {specificDosing && specificDosing[drug.split(' ')[0].toLowerCase()] && 
-                            <p className="text-xs text-slate-500 pl-4 italic">{specificDosing[drug.split(' ')[0].toLowerCase()]}</p>}
-                    </li>
-                ))}
-            </ul>
-        </div>
-    );
-
+    
     const SpecificDosingDetails: React.FC<{ drugKey: keyof typeof TREATMENT_DOSING }> = ({ drugKey }) => (
         <p className="text-xs text-slate-500 pl-4 italic mt-0.5">{TREATMENT_DOSING[drugKey]}</p>
     );
@@ -1008,13 +1165,9 @@ const App: React.FC = () => {
                 <div className="grid md:grid-cols-2 gap-x-8 gap-y-4">
                     {HESTIA_CRITERIA_ITEMS.map(item => {
                         let isChecked = clinicalData[item.key] as boolean;
-                        // Auto-check Hestia pregnancy if patientType is pregnant
                         if (item.key === 'pregnantHestia' && clinicalData.pregnant) isChecked = true;
-                        // Auto-check Hestia renal impairment if severe renal function selected
                         if (item.key === 'renalImpairment' && clinicalData.renalFunction === 'severe') isChecked = true;
-                         // Auto-check Hestia hemodynamic instability if already marked in risk strat
                         if (item.key === 'hemodynamicallyUnstable' && (clinicalData.hemodynamicallyUnstable || (clinicalData.sbp !=='' && parseInt(clinicalData.sbp) < 100) || (clinicalData.heartRate !== '' && parseInt(clinicalData.heartRate) > 100))) isChecked = true;
-
 
                         return (
                             <Checkbox
@@ -1023,7 +1176,6 @@ const App: React.FC = () => {
                                 label={<span className="text-sm text-slate-700" dangerouslySetInnerHTML={{ __html: item.label }}></span>}
                                 checked={isChecked}
                                 onChange={(e) => handleInputChange(item.key, e.target.checked)}
-                                // Disable if auto-checked by other state
                                 disabled={
                                     (item.key === 'pregnantHestia' && clinicalData.pregnant) || 
                                     (item.key === 'renalImpairment' && clinicalData.renalFunction === 'severe') ||
@@ -1144,6 +1296,54 @@ const App: React.FC = () => {
     );
   };
 
+  const renderAbbreviationsModal = () => {
+    if (!showAbbreviationsModal) return null;
+
+    const categorizedAbbreviations: Record<string, Abbreviation[]> = {};
+    ABBREVIATIONS_LIST.forEach(item => {
+      const category = item.category || 'Autres';
+      if (!categorizedAbbreviations[category]) {
+        categorizedAbbreviations[category] = [];
+      }
+      categorizedAbbreviations[category].push(item);
+    });
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 animate-fadeIn">
+        <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col">
+          <div className="flex justify-between items-center p-5 border-b border-slate-200">
+            <h3 className="text-xl font-semibold text-slate-700 flex items-center"><BookOpen size={24} className="mr-3 text-sky-600"/>Liste des Abréviations</h3>
+            <button onClick={toggleAbbreviationsModal} className="text-slate-400 hover:text-slate-600 transition-colors">
+              <X size={24} />
+            </button>
+          </div>
+          <div className="p-6 overflow-y-auto space-y-4">
+            {Object.entries(categorizedAbbreviations).sort(([catA], [catB]) => catA.localeCompare(catB)).map(([category, items]) => (
+              <div key={category}>
+                <h4 className="text-md font-semibold text-sky-700 mb-2 border-b border-sky-200 pb-1">{category}</h4>
+                <ul className="space-y-1.5 text-sm">
+                  {items.sort((a,b) => a.abbr.localeCompare(b.abbr)).map(item => (
+                    <li key={item.abbr} className="flex">
+                      <strong className="w-28 text-slate-800">{item.abbr}:</strong>
+                      <span className="text-slate-600">{item.full}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+           <div className="p-4 border-t border-slate-200 text-right">
+            <button 
+                onClick={toggleAbbreviationsModal} 
+                className="px-5 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700 font-medium transition-colors text-sm">
+                Fermer
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
 
   const renderCurrentStep = () => {
     switch (currentStep) {
@@ -1165,7 +1365,7 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-50 py-6 font-sans">
         {currentStep !== 'home' && (
-            <div className="fixed top-0 left-0 right-0 h-1.5 bg-sky-100 z-50">
+            <div className="fixed top-0 left-0 right-0 h-1.5 bg-sky-100 z-40"> {/* Lowered z-index for modal */}
                 <div 
                     className="h-full bg-sky-500 transition-all duration-300 ease-out" 
                     style={{ width: `${currentProgress}%` }}
@@ -1180,17 +1380,36 @@ const App: React.FC = () => {
                 <span className="text-2xl font-bold text-slate-700">EP-Expert</span>
             </div>
             {currentStep !== 'home' && (
-                 <button 
-                    onClick={resetState} 
-                    className="flex items-center text-sm text-sky-600 hover:text-sky-800 font-medium py-2 px-3 bg-sky-100 hover:bg-sky-200 rounded-lg transition-colors"
-                >
-                    <PlusCircle size={16} className="mr-1.5"/> Nouveau Cas
-                </button>
+                 <div className="flex items-center space-x-2">
+                    <button 
+                        onClick={handlePrintReport}
+                        disabled={!(clinicalData.peConfirmed || (patientType === 'active-cancer' && clinicalData.ctpaPositiveCancer === true))}
+                        title="Imprimer le rapport du patient"
+                        className="flex items-center text-sm text-emerald-600 hover:text-emerald-800 font-medium py-2 px-3 bg-emerald-100 hover:bg-emerald-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        <Printer size={16} className="mr-1.5"/> Imprimer
+                    </button>
+                     <button 
+                        onClick={toggleAbbreviationsModal} 
+                        title="Afficher les abréviations"
+                        className="flex items-center text-sm text-purple-600 hover:text-purple-800 font-medium py-2 px-3 bg-purple-100 hover:bg-purple-200 rounded-lg transition-colors"
+                    >
+                        <BookOpen size={16} className="mr-1.5"/> Abréviations
+                    </button>
+                    <button 
+                        onClick={resetState} 
+                        title="Commencer un nouveau cas"
+                        className="flex items-center text-sm text-sky-600 hover:text-sky-800 font-medium py-2 px-3 bg-sky-100 hover:bg-sky-200 rounded-lg transition-colors"
+                    >
+                        <PlusCircle size={16} className="mr-1.5"/> Nouveau Cas
+                    </button>
+                 </div>
             )}
         </header>
       <main>
         {renderCurrentStep()}
       </main>
+      {renderAbbreviationsModal()}
        <footer className="text-center text-xs text-slate-500 mt-8 py-6 border-t border-slate-200 px-4">
         <p className="mb-1">Application développée par Dr Zouhair Souissi © 2025 PE-Expert.</p>
         <p className="mb-1">

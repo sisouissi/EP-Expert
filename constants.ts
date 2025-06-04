@@ -1,6 +1,7 @@
-import { ClinicalData, Results, DdimerUnit, FormItem, AnticoagulantMonitoringInfo } from './types';
+import { ClinicalData, Results, DdimerUnit, FormItem, AnticoagulantMonitoringInfo, Abbreviation } from './types';
 
 export const INITIAL_CLINICAL_DATA: ClinicalData = {
+  patientName: '', // Added patient name
   age: '',
   gender: '',
   pregnant: false,
@@ -223,4 +224,41 @@ export const MONITORING_DATA: AnticoagulantMonitoringInfo[] = [
       { test: "Bilan hépatique", frequency: "Annuellement, ou si symptômes.", condition: "Insuffisance hépatique", interpretation: "Prudence si insuffisance hépatique modérée. Éviter si sévère." }
     ]
   }
+];
+
+export const ABBREVIATIONS_LIST: Abbreviation[] = [
+  { abbr: 'EP', full: 'Embolie Pulmonaire', category: 'Pathologie' },
+  { abbr: 'TVP', full: 'Thrombose Veineuse Profonde', category: 'Pathologie' },
+  { abbr: 'FC', full: 'Fréquence Cardiaque', category: 'Signes Vitaux' },
+  { abbr: 'SpO2', full: 'Saturation pulsée en oxygène', category: 'Signes Vitaux' },
+  { abbr: 'PAS', full: 'Pression Artérielle Systolique', category: 'Signes Vitaux' },
+  { abbr: 'TA', full: 'Tension Artérielle', category: 'Signes Vitaux' },
+  { abbr: 'RxT', full: 'Radio Thoracique', category: 'Imagerie' },
+  { abbr: 'CTPA', full: 'Angioscanner Pulmonaire', category: 'Imagerie' },
+  { abbr: 'V/Q', full: 'Scintigraphie Pulmonaire de Ventilation/Perfusion', category: 'Imagerie' },
+  { abbr: 'VD', full: 'Ventricule Droit', category: 'Cardiologie' },
+  { abbr: 'BNP', full: 'Brain Natriuretic Peptide', category: 'Biomarqueurs' },
+  { abbr: 'NT-proBNP', full: 'N-terminal pro-BNP', category: 'Biomarqueurs' },
+  { abbr: 'PERC', full: 'Pulmonary Embolism Rule-out Criteria', category: 'Scores' },
+  { abbr: 'YEARS', full: 'Simplified diagnostic algorithm for PE (Age, D-dimer, Clinical signs)', category: 'Scores' },
+  { abbr: 'HESTIA', full: 'Home Treatment Eligibility Criteria for PE', category: 'Scores' },
+  { abbr: 'AOD', full: 'Anticoagulant Oral Direct', category: 'Traitement' },
+  { abbr: 'HBPM', full: 'Héparine de Bas Poids Moléculaire', category: 'Traitement' },
+  { abbr: 'HNF', full: 'Héparine Non Fractionnée', category: 'Traitement' },
+  { abbr: 'AVK', full: 'Anti-Vitamine K', category: 'Traitement' },
+  { abbr: 'INR', full: 'International Normalized Ratio', category: 'Biologie' },
+  { abbr: 'TCA', full: 'Temps de Céphaline Activée', category: 'Biologie' },
+  { abbr: 'NFS', full: 'Numération Formule Sanguine', category: 'Biologie' },
+  { abbr: 'ClCr', full: 'Clairance de la Créatinine', category: 'Biologie' },
+  { abbr: 'TIH', full: 'Thrombopénie Induite par l\'Héparine', category: 'Complication' },
+  { abbr: 'GI', full: 'Gastro-Intestinal', category: 'Système' },
+  { abbr: 'GU', full: 'Génito-Urinaire', category: 'Système' },
+  { abbr: 'IV', full: 'IntraVeineux', category: 'Administration' },
+  { abbr: 'SC', full: 'Sous-Cutané', category: 'Administration' },
+  { abbr: 'OD', full: 'Omni Die (une fois par jour)', category: 'Posologie' },
+  { abbr: 'BID', full: 'Bis In Die (deux fois par jour)', category: 'Posologie' },
+  { abbr: 'ESC', full: 'European Society of Cardiology', category: 'Organisme' },
+  { abbr: 'ASH', full: 'American Society of Hematology', category: 'Organisme' },
+  { abbr: 'CHEST', full: 'American College of Chest Physicians', category: 'Organisme' },
+  { abbr: 'FEU', full: 'Fibrinogen Equivalent Units (pour D-Dimères)', category: 'Unités' },
 ];

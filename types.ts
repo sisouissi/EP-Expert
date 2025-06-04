@@ -12,6 +12,7 @@ export type Step =
 export type DdimerUnit = 'mg/L' | 'µg/L' | 'ng/mL';
 
 export interface ClinicalData {
+  patientName: string; // Added patient name
   age: string;
   gender: 'male' | 'female' | '';
   pregnant: boolean;
@@ -94,4 +95,10 @@ export interface FormItem<T = boolean> {
 export interface AnticoagulantMonitoringInfo {
   anticoagulant: string;
   tests: { test: string; frequency: string; condition?: string; interpretation: string; }[];
+}
+
+export interface Abbreviation {
+  abbr: string;
+  full: string;
+  category?: string;
 }
