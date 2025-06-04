@@ -41,7 +41,7 @@ const App: React.FC = () => {
     if (wellsScore <= 1) wellsCategory = 'Faible (≤1)';
     else if (wellsScore <= 4 && patientType === 'active-cancer') wellsCategory = 'Faible/Modérée (≤4)'; // Page 6 threshold for cancer
     else if (wellsScore <= 6) wellsCategory = 'Modérée (2-6)';
-    else wellsCategory = 'Élevée (&gt;6)';
+    else wellsCategory = 'Élevée (supérieur à 6)';
     if (wellsScore >= 5 && patientType === 'active-cancer') wellsCategory = 'Élevée (≥5)'; // Page 6 threshold for cancer
 
 
@@ -241,7 +241,7 @@ const App: React.FC = () => {
         } else if (results.wellsScore <= 6) {
             diagnosticRecText = ddimerPresent ? (ddimerIsPositive ? 'CTPA recommandé (D-dimères +).' : 'EP exclue (D-dimères -).') : 'D-dimères recommandés (Wells modéré).';
         } else {
-            diagnosticRecText = 'CTPA direct recommandé (Wells élevé).';
+            diagnosticRecText = `CTPA direct recommandé (Wells ${results.wellsCategory.replace('(supérieur à 6)', 'supérieur à 6')}).`;
         }
     }
     
@@ -255,18 +255,104 @@ const App: React.FC = () => {
     else riskLevelText = "RISQUE FAIBLE";
 
 
-    let treatmentRecText = "Basé sur le niveau de risque et le profil patient (voir application)."; // Placeholder
-    if (isHighRiskInput) treatmentRecText = "Reperfusion urgente (Thrombolyse/Embolectomie) + HNF IV. Soins intensifs.";
-    else if (patientType === 'active-cancer') treatmentRecText = "HBPM ou AODs spécifiques (Edoxaban, Rivaroxaban, Apixaban). Durée: indéfinie si cancer actif.";
-    else if (patientType === 'pregnant') treatmentRecText = `HBPM (${TREATMENT_DOSING.enoxaparin_pregnancy}). Durée: grossesse + 6 semaines post-partum.`;
-    else if (clinicalData.renalFunction === 'severe') treatmentRecText = "HNF IV ou AVK. HBPM/AODs avec prudence/ajustement majeur.";
-    else treatmentRecText = "AODs (1ère intention pour risque faible/intermédiaire-faible stable) ou HBPM/AVK. Durée selon provocation de l'EP.";
+    let treatmentRecHTML = "<h4>Recommandation Générale:</h4><p>Basé sur le niveau de risque et le profil patient (voir application pour détails spécifiques).</p>";
     
+    const isTrueHighRisk = isHighRiskInput;
+    const isTrueIntermediateHighRisk = !isHighRiskInput && hasRVDysfunction && hasBiomarkers;
+    const isTrueIntermediateLowRisk = !isHighRiskInput && (hasRVDysfunction || hasBiomarkers) && !(hasRVDysfunction && hasBiomarkers);
+    const isTrueLowRisk = !isHighRiskInput && !hasRVDysfunction && !hasBiomarkers;
+
+    if (isTrueHighRisk) {
+        treatmentRecHTML = `
+            <h4>Recommandation Générale: RISQUE ÉLEVÉ</h4>
+            <p>Reperfusion urgente + Anticoagulation par HNF IV. Soins intensifs.</p>
+            <ul>
+                <li><strong>Thrombolyse systémique:</strong> Altéplase (ex: ${TREATMENT_DOSING.alteplase}).</li>
+                <li><strong>Anticoagulation initiale:</strong> HNF IV (ex: ${TREATMENT_DOSING.ufh_curative}).</li>
+            </ul>
+            ${clinicalData.bleedingRisk ? '<p><strong>ATTENTION:</strong> Risque hémorragique élevé, thrombolyse souvent contre-indiquée. Privilégier embolectomie/traitement percutané.</p>' : ''}
+        `;
+    } else { // Intermediate or Low risk
+        let initialTreatmentHTML = "<h4>Traitement Initial (Parentéral si besoin):</h4><ul>";
+        initialTreatmentHTML += `<li>HBPM: ex. Enoxaparine (${patientType === 'pregnant' ? TREATMENT_DOSING.enoxaparin_pregnancy : patientType === 'active-cancer' ? TREATMENT_DOSING.enoxaparin_cancer : TREATMENT_DOSING.enoxaparin_curative})</li>`;
+        initialTreatmentHTML += `<li>HNF IV: (${TREATMENT_DOSING.ufh_curative})</li>`;
+        initialTreatmentHTML += "</ul>";
+
+        let maintenanceTreatmentHTML = "<h4>Traitement d'Entretien/Relais (Oral):</h4><ul>";
+        ANTICOAGULANT_OPTIONS.general.doacs.forEach(doac => {
+            const drugKey = doac.split(' ')[0].toLowerCase() as keyof typeof TREATMENT_DOSING;
+            if (TREATMENT_DOSING[drugKey]) {
+                maintenanceTreatmentHTML += `<li>${doac}: ${TREATMENT_DOSING[drugKey]}</li>`;
+            }
+        });
+        maintenanceTreatmentHTML += `<li>Warfarine (Coumadine®): ${TREATMENT_DOSING.warfarin}</li>`;
+        maintenanceTreatmentHTML += "</ul>";
+
+        let generalRec = "Anticoagulation.";
+        if (isTrueIntermediateHighRisk) generalRec = "Anticoagulation. Hospitalisation et surveillance rapprochée. Discuter thrombolyse de sauvetage si dégradation.";
+        else if (isTrueIntermediateLowRisk) generalRec = "Anticoagulation. Hospitalisation généralement.";
+        else if (isTrueLowRisk) generalRec = "Anticoagulation (AODs en 1ère intention). Traitement ambulatoire possible si critères HESTIA négatifs.";
+        
+        treatmentRecHTML = `<h4>Recommandation Générale: ${isTrueIntermediateHighRisk ? 'RISQUE INTERMÉDIAIRE-ÉLEVÉ' : isTrueIntermediateLowRisk ? 'RISQUE INTERMÉDIAIRE-FAIBLE' : 'RISQUE FAIBLE'}</h4><p>${generalRec}</p>${initialTreatmentHTML}${maintenanceTreatmentHTML}`;
+    }
+    
+    // Specific adaptations
+    let adaptationsHTML = "<h4>Adaptations Spécifiques:</h4><ul>";
+    let hasAdaptations = false;
+    if (patientType === 'pregnant') {
+        hasAdaptations = true;
+        adaptationsHTML += `<li><strong>Grossesse:</strong> Traitement par HBPM (ex: Enoxaparine - ${TREATMENT_DOSING.enoxaparin_pregnancy}). AODs/AVK contre-indiqués.</li>`;
+    }
+    if (patientType === 'active-cancer') {
+        hasAdaptations = true;
+        adaptationsHTML += `<li><strong>Cancer Actif:</strong>
+            <ul>
+                <li>HBPM (ex: Enoxaparine - ${TREATMENT_DOSING.enoxaparin_cancer}).</li>
+                <li>AODs spécifiques: Edoxaban (${TREATMENT_DOSING.edoxaban}), Rivaroxaban (${TREATMENT_DOSING.rivaroxaban}), Apixaban (${TREATMENT_DOSING.apixaban}). Évaluer risque hémorragique GI/GU et type de cancer.</li>
+            </ul>
+        </li>`;
+    }
+    if (clinicalData.renalFunction === 'severe') {
+        hasAdaptations = true;
+        adaptationsHTML += `<li><strong>Insuffisance Rénale Sévère (ClCr &lt; 30 mL/min):</strong>
+            <ul>
+                <li>HNF IV ou AVK (Warfarine).</li>
+                <li>HBPM (Enoxaparine): ${TREATMENT_DOSING.enoxaparin_renal_moderate} (prudence si ClCr 15-29).</li>
+                <li>Apixaban: 2.5mg BID possible si ClCr 15-29 ET ≥2 critères (âge ≥80, poids ≤60kg).</li>
+                <li>Autres AODs souvent contre-indiqués/à éviter.</li>
+            </ul>
+        </li>`;
+    } else if (clinicalData.renalFunction === 'moderate') {
+        hasAdaptations = true;
+        adaptationsHTML += `<li><strong>Insuffisance Rénale Modérée (ClCr 30-49 mL/min):</strong>
+            <ul>
+                <li>HBPM: Doses standard ou ajustées (ex: Enoxaparine 1mg/kg OD possible).</li>
+                <li>AODs: Dabigatran (110mg BID si risque hémorragique), Edoxaban (30mg OD). Rivaroxaban/Apixaban doses standard avec prudence.</li>
+            </ul>
+        </li>`;
+    }
+    if (!hasAdaptations) adaptationsHTML += "<li>Aucune adaptation spécifique majeure identifiée pour grossesse, cancer ou IR sévère/modérée sur la base des données actuelles.</li>";
+    adaptationsHTML += "</ul>";
+
+
     let durationKey: keyof typeof TREATMENT_DURATION_GUIDELINES = 'unprovoked_first';
     if (patientType === 'active-cancer') durationKey = 'cancer';
     else if (patientType === 'pregnant') durationKey = 'pregnancy';
     else if (clinicalData.peProvoked) durationKey = 'provoked_transient';
     const durationText = TREATMENT_DURATION_GUIDELINES[durationKey];
+
+    // Replace > in riskLevelText for the report
+    let finalRiskLevelTextForReport = riskLevelText;
+    if (finalRiskLevelTextForReport.includes("chute > 40 mmHg > 15 min")) {
+        finalRiskLevelTextForReport = finalRiskLevelTextForReport.replace("chute > 40 mmHg > 15 min", "chute supérieur à 40 mmHg supérieur à 15 min");
+    }
+    if (finalRiskLevelTextForReport.includes("Risque de mortalité précoce > 15%")) {
+        finalRiskLevelTextForReport = finalRiskLevelTextForReport.replace("Risque de mortalité précoce > 15%", "Risque de mortalité précoce supérieur à 15%");
+    }
+     if (finalRiskLevelTextForReport.includes("Risque de mortalité > 15%")) { // General case if it exists
+        finalRiskLevelTextForReport = finalRiskLevelTextForReport.replace("Risque de mortalité > 15%", "Risque de mortalité supérieur à 15%");
+    }
+
 
     const reportHTML = `
       <html>
@@ -275,10 +361,11 @@ const App: React.FC = () => {
           <style>
             body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.6; font-size: 10pt; }
             @page { size: A4; margin: 1cm; }
-            h1, h2, h3 { color: #333; margin-top: 1.5em; margin-bottom: 0.5em; }
+            h1, h2, h3, h4 { color: #333; margin-top: 1.2em; margin-bottom: 0.4em; }
             h1 { font-size: 16pt; text-align: center; border-bottom: 2px solid #333; padding-bottom: 5px; }
             h2 { font-size: 14pt; border-bottom: 1px solid #ccc; padding-bottom: 3px; }
             h3 { font-size: 12pt; }
+            h4 { font-size: 10pt; font-weight: bold; color: #444; margin-top: 0.8em;}
             .section { margin-bottom: 15px; padding-left: 10px; }
             .label { font-weight: bold; color: #555; }
             p { margin: 0.3em 0; }
@@ -294,6 +381,10 @@ const App: React.FC = () => {
             .flex-container { display: flex; justify-content: space-between; }
             .flex-item { width: 48%; }
             ul { padding-left: 20px; margin: 0.3em 0; }
+            li { margin-bottom: 0.2em; }
+            .treatment-details ul { padding-left: 15px; }
+            .treatment-details li { font-size: 9pt; }
+            .treatment-details p { font-size: 9pt; }
           </style>
         </head>
         <body>
@@ -324,7 +415,7 @@ const App: React.FC = () => {
           
           <div class="section alert alert-info">
             <h2>Recommandation Diagnostique Principale</h2>
-            <p>${diagnosticRecText}</p>
+            <p>${diagnosticRecText.replace('&gt;', 'supérieur à')}</p>
             ${clinicalData.ctpaPerformedCancer && patientType === 'active-cancer' ? `<p><span class="label">Résultat CTPA (Cancer):</span> ${clinicalData.ctpaPositiveCancer ? 'Positif pour EP' : 'Négatif pour EP'}</p>` : ''}
             ${clinicalData.peConfirmed && patientType !== 'active-cancer' ? `<p><span class="label">Confirmation EP par imagerie:</span> Oui</p>`: ''}
           </div>
@@ -332,26 +423,28 @@ const App: React.FC = () => {
           ${clinicalData.peConfirmed || (patientType === 'active-cancer' && clinicalData.ctpaPositiveCancer === true) ? `
           <div class="section">
             <h2>Stratification du Risque (EP Confirmée)</h2>
-            <p><span class="label">Stabilité Hémodynamique (PAS):</span><span class="value">${clinicalData.sbp || 'N/A'} mmHg ${clinicalData.hemodynamicallyUnstable ? '(Instable)' : '(Stable)'}</span></p>
+            <p><span class="label">Stabilité Hémodynamique (PAS):</span><span class="value">${clinicalData.sbp || 'N/A'} mmHg ${isHighRiskInput ? '(Instable)' : '(Stable)'}</span></p>
             <p><span class="label">Dysfonction VD:</span><span class="value">${clinicalData.rvDysfunction ? 'Oui' : 'Non'}</span></p>
             <p><span class="label">Biomarqueurs Cardiaques (Troponine/BNP):</span><span class="value">${clinicalData.troponin || clinicalData.bnp ? 'Positifs' : 'Négatifs'}</span></p>
             <div class="alert alert-warning">
-                <p><span class="label">Niveau de Risque ESC:</span><span class="value">${riskLevelText}</span></p>
+                <p><span class="label">Niveau de Risque ESC:</span><span class="value">${finalRiskLevelTextForReport}</span></p>
             </div>
             <p><span class="label">Critères HESTIA (pour ambulatoire):</span><span class="value">${results.hestiaScore} positifs - ${results.outpatientEligible ? 'Ambulatoire Possible' : 'Hospitalisation Recommandée'}</span></p>
           </div>
 
-          <div class="section alert alert-success">
+          <div class="section alert alert-success treatment-details">
             <h2>Plan Thérapeutique</h2>
-            <p><span class="label">Recommandation Générale:</span><span class="value">${treatmentRecText}</span></p>
-            <p><span class="label">Durée du traitement:</span><span class="value">${durationText} (Facteur provoquant: ${clinicalData.peProvoked ? clinicalData.peProvokedFactorDetails || 'Oui' : 'Non'})</span></p>
-            <p><span class="label">Fonction Rénale:</span><span class="value">${clinicalData.renalFunction || 'N/A'}</span></p>
-            <p><span class="label">Risque Hémorragique élevé:</span><span class="value">${clinicalData.bleedingRisk ? 'Oui' : 'Non'}</span></p>
+            ${treatmentRecHTML.replace(/&gt;/g, 'supérieur à')}
+            ${adaptationsHTML}
+            <h4>Durée du traitement:</h4>
+            <p>${durationText} (Facteur provoquant: ${clinicalData.peProvoked ? clinicalData.peProvokedFactorDetails || 'Oui' : 'Non'})</p>
+            <p><span class="label">Fonction Rénale (entrée):</span><span class="value">${RENAL_FUNCTION_OPTIONS.find(opt => opt.value === clinicalData.renalFunction)?.label || 'N/A'}</span></p>
+            <p><span class="label">Risque Hémorragique élevé (entrée):</span><span class="value">${clinicalData.bleedingRisk ? 'Oui' : 'Non'}</span></p>
           </div>
           
           <div class="section">
             <h2>Suivi Recommandé</h2>
-            <p>Consulter le tableau de suivi biologique pour l'anticoagulant spécifique prescrit.</p>
+            <p>Consulter le tableau de suivi biologique pour l'anticoagulant spécifique prescrit (voir application).</p>
             <p>Suivi clinique régulier pour évaluer réponse, tolérance, observance, et symptômes persistants. Réévaluation à 3 mois pour la durée du traitement (sauf cas spécifiques).</p>
           </div>
           ` : `
@@ -515,7 +608,7 @@ const App: React.FC = () => {
              <Checkbox
                 key="wellsHeartRate"
                 id="wellsHeartRate"
-                label={<span className="text-sm text-slate-700">Fréquence cardiaque &gt; 100 bpm <span className="font-semibold text-sky-600">(+1.5)</span></span>}
+                label={<span className="text-sm text-slate-700">Fréquence cardiaque supérieur à 100 bpm <span className="font-semibold text-sky-600">(+1.5)</span></span>}
                 checked={parseInt(clinicalData.heartRate) > 100}
                 disabled
                 className="mr-2 h-4 w-4 text-sky-600 focus:ring-sky-500 border-slate-300 rounded"
@@ -745,7 +838,7 @@ const App: React.FC = () => {
                 nextStepInfo = `Seuil adapté (YEARS/âge): ${getDisplayDdimerThreshold()} ${clinicalData.ddimerUnit}. Si négatifs, EP exclue. Si positifs, CTPA.`;
             }
         } else { 
-            recommendation = 'Probabilité élevée (Wells &gt; 6). Angioscanner pulmonaire (CTPA) direct recommandé.';
+            recommendation = `Probabilité élevée (Wells ${results.wellsCategory.replace('(supérieur à 6)', 'supérieur à 6')}). Angioscanner pulmonaire (CTPA) direct recommandé.`;
             alertTypeMain = 'error';
             nextStepInfo = 'Procéder immédiatement au CTPA sans D-dimères préalables.';
         }
@@ -900,7 +993,7 @@ const App: React.FC = () => {
      let riskCategoryDisplay: React.ReactNode = null;
 
      if (isHighRiskInput) {
-        riskCategoryDisplay = <AlertBox type="error" title="RISQUE ÉLEVÉ (Instabilité Hémodynamique)" message={<><p className="mb-1">Choc ou hypotension. Risque de mortalité précoce &gt; 15%.</p> <strong className="mt-1 block">Recommandation : Thrombolyse systémique ou embolectomie en urgence. Anticoagulation (HNF). Soins intensifs.</strong></>} />;
+        riskCategoryDisplay = <AlertBox type="error" title="RISQUE ÉLEVÉ (Instabilité Hémodynamique)" message={<><p className="mb-1">Choc ou hypotension. Risque de mortalité précoce supérieur à 15%.</p> <strong className="mt-1 block">Recommandation : Thrombolyse systémique ou embolectomie en urgence. Anticoagulation (HNF). Soins intensifs.</strong></>} />;
      } else if (hasRVDysfunction && hasBiomarkers) {
         riskCategoryDisplay = <AlertBox type="warning" title="RISQUE INTERMÉDIAIRE-ÉLEVÉ" message={<><p className="mb-1">Stabilité hémodynamique MAIS dysfonction VD ET biomarqueurs positifs. Risque de mortalité 3-15%.</p><strong className="mt-1 block">Recommandation : Anticoagulation. Hospitalisation. Surveillance rapprochée. Discuter thrombolyse de sauvetage ou ttt. percutané si dégradation.</strong></>} />;
      } else if (hasRVDysfunction || hasBiomarkers) {
@@ -921,7 +1014,11 @@ const App: React.FC = () => {
                 <SectionCard title="Stabilité Hémodynamique" icon={<Heart size={20}/>}>
                     <div className="space-y-5">
                         <Input label="Pression Artérielle Systolique (PAS, mmHg)" type="number" value={clinicalData.sbp} onChange={(e) => handleInputChange('sbp', e.target.value)} placeholder="Ex: 120" />
-                        <Checkbox label="Choc cardiogénique ou hypotension persistante (PAS &lt; 90 mmHg, ou chute &gt; 40 mmHg &gt; 15 min, non due à arythmie/hypovolémie/sepsis)" checked={clinicalData.hemodynamicallyUnstable} onChange={(e) => handleInputChange('hemodynamicallyUnstable', e.target.checked)} />
+                        <Checkbox 
+                          label="Choc cardiogénique ou hypotension persistante (PAS < 90 mmHg, ou chute supérieur à 40 mmHg pendant supérieur à 15 min, non due à arythmie/hypovolémie/sepsis)" 
+                          checked={clinicalData.hemodynamicallyUnstable} 
+                          onChange={(e) => handleInputChange('hemodynamicallyUnstable', e.target.checked)} 
+                        />
                         {clinicalData.sbp !== '' && parseInt(clinicalData.sbp) < 90 && !clinicalData.hemodynamicallyUnstable && 
                             <p className="text-sm text-red-600 p-2 bg-red-50 rounded-md border border-red-200">Note: PAS actuelle &lt; 90 mmHg indique une instabilité.</p>}
                     </div>
@@ -1024,6 +1121,7 @@ const App: React.FC = () => {
                     <AlertBox type="error" title="🚨 URGENCE VITALE - REPERFUSION IMMÉDIATE" message={
                         <div className="space-y-2 text-sm">
                            <TreatmentDetail title="Thrombolyse Systémique" content={["Altéplase (100mg/2h IV ou 0.6mg/kg sur 15min si arrêt cardiaque) ou Ténectéplase.", "À initier SANS DÉLAI si absence de contre-indication absolue."]} icon={Activity}/>
+                           <SpecificDosingDetails drugKey="alteplase"/>
                            <TreatmentDetail title="Alternative si Contre-indication/Échec Thrombolyse" content="Embolectomie chirurgicale ou traitement percutané par cathéter." icon={HelpCircle}/>
                            <TreatmentDetail title="Anticoagulation Initiale" content="Héparine Non Fractionnée (HNF) IV." icon={Pill}/>
                            <SpecificDosingDetails drugKey="ufh_curative"/>
@@ -1383,7 +1481,7 @@ const App: React.FC = () => {
                  <div className="flex items-center space-x-2">
                     <button 
                         onClick={handlePrintReport}
-                        disabled={!(clinicalData.peConfirmed || (patientType === 'active-cancer' && clinicalData.ctpaPositiveCancer === true))}
+                        disabled={!(clinicalData.peConfirmed || (patientType === 'active-cancer' && clinicalData.ctpaPerformedCancer && clinicalData.ctpaPositiveCancer === true))}
                         title="Imprimer le rapport du patient"
                         className="flex items-center text-sm text-emerald-600 hover:text-emerald-800 font-medium py-2 px-3 bg-emerald-100 hover:bg-emerald-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >

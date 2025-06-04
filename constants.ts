@@ -94,13 +94,13 @@ export const YEARS_CRITERIA_ITEMS: FormItem[] = [
 ];
 
 export const HESTIA_CRITERIA_ITEMS: FormItem[] = [
-    { key: 'hemodynamicallyUnstable', label: 'Instabilité hémodynamique (PAS &lt;100 mmHg ou FC &gt;100 bpm)' },
+    { key: 'hemodynamicallyUnstable', label: 'Instabilité hémodynamique (PAS &lt;100 mmHg ou FC supérieur à 100 bpm)' },
     { key: 'thrombolysisNeeded', label: 'Thrombolyse ou embolectomie nécessaire' },
-    { key: 'activeBleeding', label: 'Saignement actif ou risque hémorragique élevé (ex: plaquettes &lt; 75 G/L, TA &gt; 180/110 non contrôlée)' },
-    { key: 'oxygenNeeded', label: 'Oxygénothérapie &gt;24h pour maintenir SpO2 &gt;90% (ou &gt;92-95% si patho respi chronique)' },
+    { key: 'activeBleeding', label: 'Saignement actif ou risque hémorragique élevé (ex: plaquettes &lt; 75 G/L, TA supérieur à 180/110 non contrôlée)' },
+    { key: 'oxygenNeeded', label: 'Oxygénothérapie supérieur à 24h pour maintenir SpO2 supérieur à 90% (ou supérieur à 92-95% si patho respi chronique)' },
     { key: 'peOnAnticoag', label: 'EP diagnostiquée sous anticoagulation curative' },
-    { key: 'severePain', label: 'Douleur sévère nécessitant analgésiques IV &gt;24h' },
-    { key: 'socialReasons', label: 'Raison médicale ou sociale nécessitant admission &gt;24h (ex: absence de soutien à domicile, comorbidités importantes)' },
+    { key: 'severePain', label: 'Douleur sévère nécessitant analgésiques IV supérieur à 24h' },
+    { key: 'socialReasons', label: 'Raison médicale ou sociale nécessitant admission supérieur à 24h (ex: absence de soutien à domicile, comorbidités importantes)' },
     { key: 'renalImpairment', label: 'Clairance créatinine &lt;30 mL/min' },
     { key: 'liverImpairment', label: 'Insuffisance hépatique sévère (Child-Pugh C)' },
     { key: 'pregnantHestia', label: 'Grossesse' },
@@ -120,7 +120,7 @@ export const CTPA_FINDINGS_OPTIONS = [
   { value: 'segmental', label: 'Embolie segmentaire' },
   { value: 'subsegmental', label: 'Embolie sous-segmentaire' },
   { value: 'bilateral', label: 'Embolie bilatérale' },
-  { value: 'massive', label: 'Embolie massive (&gt;50% lit vasculaire)' },
+  { value: 'massive', label: 'Embolie massive (supérieur à 50% lit vasculaire)' },
 ];
 
 export const RENAL_FUNCTION_OPTIONS = [
@@ -197,14 +197,14 @@ export const MONITORING_DATA: AnticoagulantMonitoringInfo[] = [
     anticoagulant: "Dabigatran (Pradaxa®)",
     tests: [
       { test: "NFS", frequency: "Annuellement, ou si saignement.", interpretation: "Surveiller." },
-      { test: "Créatininémie/ClCr", frequency: "Annuellement. Tous les 3-6 mois si ClCr 30-49 mL/min ou âge >75 ans.", interpretation: "Arrêter si ClCr < 30 mL/min. Ajuster dose si ClCr 30-50 mL/min et risque hémorragique." }
+      { test: "Créatininémie/ClCr", frequency: "Annuellement. Tous les 3-6 mois si ClCr 30-49 mL/min ou âge supérieur à 75 ans.", interpretation: "Arrêter si ClCr < 30 mL/min. Ajuster dose si ClCr 30-50 mL/min et risque hémorragique." }
     ]
   },
   {
     anticoagulant: "Rivaroxaban (Xarelto®)",
     tests: [
       { test: "NFS", frequency: "Annuellement, ou si saignement.", interpretation: "Surveiller." },
-      { test: "Créatininémie/ClCr", frequency: "Annuellement. Tous les 3-6 mois si ClCr 30-49 mL/min ou âge >75 ans.", interpretation: "Arrêter si ClCr < 15 mL/min (certains disent <30). Prudence et ajustement/éviter si ClCr 15-49 mL/min." },
+      { test: "Créatininémie/ClCr", frequency: "Annuellement. Tous les 3-6 mois si ClCr 30-49 mL/min ou âge supérieur à 75 ans.", interpretation: "Arrêter si ClCr < 15 mL/min (certains disent <30). Prudence et ajustement/éviter si ClCr 15-49 mL/min." },
       { test: "Bilan hépatique (ASAT, ALAT, Bili)", frequency: "Annuellement, ou si symptômes.", condition: "Insuffisance hépatique", interpretation: "Arrêter si Child-Pugh B ou C modérée à sévère, ou maladie hépatique avec coagulopathie." }
     ]
   },
@@ -212,7 +212,7 @@ export const MONITORING_DATA: AnticoagulantMonitoringInfo[] = [
     anticoagulant: "Apixaban (Eliquis®)",
     tests: [
       { test: "NFS", frequency: "Annuellement, ou si saignement.", interpretation: "Surveiller." },
-      { test: "Créatininémie/ClCr", frequency: "Annuellement. Plus fréquemment si ClCr limite ou âge >75 ans.", interpretation: "Prudence et ajustement de dose si ClCr 15-29 mL/min (2.5 mg BID). Éviter si ClCr <15 mL/min." },
+      { test: "Créatininémie/ClCr", frequency: "Annuellement. Plus fréquemment si ClCr limite ou âge supérieur à 75 ans.", interpretation: "Prudence et ajustement de dose si ClCr 15-29 mL/min (2.5 mg BID). Éviter si ClCr <15 mL/min." },
       { test: "Bilan hépatique", frequency: "Annuellement, ou si symptômes.", condition: "Insuffisance hépatique", interpretation: "Arrêter si Child-Pugh C sévère. Prudence si Child-Pugh B modérée." }
     ]
   },
@@ -220,7 +220,7 @@ export const MONITORING_DATA: AnticoagulantMonitoringInfo[] = [
     anticoagulant: "Edoxaban (Lixiana®)",
     tests: [
       { test: "NFS", frequency: "Annuellement, ou si saignement.", interpretation: "Surveiller." },
-      { test: "Créatininémie/ClCr", frequency: "Annuellement. Plus fréquemment si ClCr limite ou âge >75 ans.", interpretation: "Ajuster dose à 30 mg OD si ClCr 15-50 mL/min. Éviter si ClCr <15 mL/min ou >95 mL/min (moins d'efficacité dans certaines études FA, prudence EP)." },
+      { test: "Créatininémie/ClCr", frequency: "Annuellement. Plus fréquemment si ClCr limite ou âge supérieur à 75 ans.", interpretation: "Ajuster dose à 30 mg OD si ClCr 15-50 mL/min. Éviter si ClCr <15 mL/min ou supérieur à 95 mL/min (moins d'efficacité dans certaines études FA, prudence EP)." },
       { test: "Bilan hépatique", frequency: "Annuellement, ou si symptômes.", condition: "Insuffisance hépatique", interpretation: "Prudence si insuffisance hépatique modérée. Éviter si sévère." }
     ]
   }
