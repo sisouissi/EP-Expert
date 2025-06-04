@@ -1,5 +1,4 @@
-
-import { ClinicalData, Results, DdimerUnit, FormItem } from './types';
+import { ClinicalData, Results, DdimerUnit, FormItem, AnticoagulantMonitoringInfo } from './types';
 
 export const INITIAL_CLINICAL_DATA: ClinicalData = {
   age: '',
@@ -32,6 +31,8 @@ export const INITIAL_CLINICAL_DATA: ClinicalData = {
   peConfirmed: false,
   bleedingRisk: false,
   renalFunction: '',
+  peProvoked: false,
+  peProvokedFactorDetails: '',
   hemodynamicallyUnstable: false,
   thrombolysisNeeded: false,
   activeBleeding: false,
@@ -43,6 +44,10 @@ export const INITIAL_CLINICAL_DATA: ClinicalData = {
   liverImpairment: false,
   pregnantHestia: false,
   hitHistory: false,
+  chestXrayPerformed: false,
+  chestXraySuggestsOtherDiagnosis: null,
+  ctpaPerformedCancer: false,
+  ctpaPositiveCancer: null,
 };
 
 export const INITIAL_RESULTS: Results = {
@@ -52,7 +57,7 @@ export const INITIAL_RESULTS: Results = {
   percPositive: false,
   yearsCriteriaMet: 0,
   yearsCategory: '',
-  ddimerThreshold: 0.5, // Default for mg/L
+  ddimerThreshold: 0.5, // Default for mg/L FEU
   hestiaScore: 0,
   outpatientEligible: true,
   peRiskLevel: '',
@@ -122,4 +127,100 @@ export const RENAL_FUNCTION_OPTIONS = [
   { value: 'normal', label: 'Normale (ClCr ≥ 50 mL/min)' },
   { value: 'moderate', label: 'Modérément altérée (ClCr 30-49 mL/min)' },
   { value: 'severe', label: 'Sévèrement altérée (ClCr &lt; 30 mL/min)' },
+];
+
+export const ANTICOAGULANT_OPTIONS = {
+  general: {
+    doacs: ['Rivaroxaban (Xarelto®)', 'Apixaban (Eliquis®)', 'Edoxaban (Lixiana®)', 'Dabigatran (Pradaxa®)'],
+    lmwh: ['Enoxaparine (Lovenox®)', 'Tinzaparine (Innohep®)', 'Daltéparine (Fragmin®)'],
+    warfarin: ['Warfarine (Coumadine®)'],
+    ufh: ['Héparine Non Fractionnée (HNF)']
+  },
+  pregnant: {
+    lmwh: ['Enoxaparine (Lovenox®)', 'Tinzaparine (Innohep®)', 'Daltéparine (Fragmin®)'],
+    ufh: ['Héparine Non Fractionnée (HNF)']
+  },
+  cancer: {
+    lmwh: ['Enoxaparine (Lovenox®)', 'Tinzaparine (Innohep®)', 'Daltéparine (Fragmin®)'],
+    doacs: ['Edoxaban (Lixiana®)', 'Rivaroxaban (Xarelto®)', 'Apixaban (Eliquis®)'],
+  }
+};
+
+export const TREATMENT_DOSING = {
+  rivaroxaban: "15 mg BID pendant 21 jours, puis 20 mg OD. Peut être réduit à 10 mg OD après 6 mois si traitement prolongé.",
+  apixaban: "10 mg BID pendant 7 jours, puis 5 mg BID. Peut être réduit à 2.5 mg BID après 6 mois si traitement prolongé.",
+  edoxaban: "60 mg OD (ou 30 mg OD si ClCr 15-50 mL/min, poids ≤60 kg, ou inhibiteur P-gp puissant). Précédé par LMWH/UFH pendant au moins 5 jours.",
+  dabigatran: "150 mg BID (ou 110 mg BID si âge ≥80 ans ou ClCr 30-50 mL/min avec risque hémorragique élevé). Précédé par LMWH/UFH pendant au moins 5 jours.",
+  enoxaparin_curative: "1 mg/kg BID SC, ou 1.5 mg/kg OD SC.",
+  enoxaparin_cancer: "1 mg/kg BID SC (préféré pour les 3-6 premiers mois). Alternative : 1.5 mg/kg OD SC.",
+  enoxaparin_renal_moderate: "1 mg/kg OD SC (si ClCr 15-29 mL/min pour indication TVP/EP). Prudence.",
+  enoxaparin_pregnancy: "1 mg/kg BID SC, ou 1.5 mg/kg OD SC. Doses ajustées au poids de grossesse. Surveillance anti-Xa peut être utile.",
+  warfarin: "Dose initiale 5-10 mg, puis ajuster selon INR (cible 2.0-3.0). Nécessite un chevauchement avec LMWH/UFH pendant au moins 5 jours ET INR ≥2.0 pendant 24h.",
+  ufh_curative: "Bolus 80 UI/kg (max 5000 UI), puis perfusion 18 UI/kg/h (max 1250 UI/h). Ajuster selon TCA (cible 1.5-2.5x la normale).",
+  alteplase: "100 mg en 2 heures IV. Ou 0.6 mg/kg sur 15 min (max 50mg) pour arrêt cardiaque."
+};
+
+export const TREATMENT_DURATION_GUIDELINES = {
+  provoked_transient: "3 mois.",
+  unprovoked_first: "Au moins 3-6 mois, puis réévaluation pour traitement prolongé (considérer risque récidive vs hémorragie).",
+  unprovoked_recurrent: "Traitement prolongé (souvent à vie) si risque hémorragique acceptable.",
+  cancer: "Traitement prolongé (indéfini) tant que le cancer est actif ou sous traitement. Au moins 6 mois.",
+  pregnancy: "Pendant toute la grossesse ET au moins 6 semaines post-partum (total minimum 3 mois)."
+};
+
+export const MONITORING_DATA: AnticoagulantMonitoringInfo[] = [
+  {
+    anticoagulant: "HBPM (ex: Enoxaparine)",
+    tests: [
+      { test: "NFS (Plaquettes)", frequency: "Tous les 2-3 jours de J6 à J14, puis tous les 1-3 mois.", condition: "Thrombopénie", interpretation: "Arrêter HBPM. Envisager inhibiteur direct de la thrombine si TIH suspectée." },
+      { test: "Créatininémie", frequency: "Tous les 1-3 mois ou si changement fonction rénale/saignement.", interpretation: "Ajuster la dose d'énoxaparine si nécessaire." },
+      { test: "Poids du patient", frequency: "Tous les 1-3 mois.", interpretation: "Ajuster la dose d'énoxaparine si nécessaire." },
+      { test: "Anti-Xa", frequency: "Populations spéciales (IR sévère CrCl <30, grossesse, obésité morbide). Pic 4h post-dose après min 3 doses.", interpretation: "Cible 0.5-1.0 UI/mL (pour 2 inj/j) ou 1.0-2.0 UI/mL (pour 1 inj/j, moins validé)." }
+    ]
+  },
+  {
+    anticoagulant: "Héparine Non Fractionnée (HNF)",
+    tests: [
+      { test: "NFS (Plaquettes)", frequency: "Tous les 2-3 jours de J6 à J14, puis tous les 1-3 mois.", condition: "TIH (Thrombopénie Induite par Héparine)", interpretation: "Arrêter Héparine. Envisager inhibiteur direct de la thrombine." },
+      { test: "TCA", frequency: "6h post bolus et 6h après chaque changement de dose, puis quotidiennement une fois stable.", interpretation: "Ajuster la dose pour maintenir TCA cible (ex: 1.5-2.5x la normale)." }
+    ]
+  },
+  {
+    anticoagulant: "Warfarine (AVK)",
+    tests: [
+      { test: "NFS", frequency: "Annuellement.", condition: "Thrombopénie", interpretation: "Surveiller." },
+      { test: "INR", frequency: "Tous les 1-3 jours jusqu'à 2 INR consécutifs dans la cible, puis espacer progressivement (max 12 semaines entre les tests).", condition: "Hypercoagulabilité ou Hypocoagulabilité induite par Warfarine", interpretation: "Ajuster la dose selon la cible INR (généralement 2.0-3.0)." }
+    ]
+  },
+  {
+    anticoagulant: "Dabigatran (Pradaxa®)",
+    tests: [
+      { test: "NFS", frequency: "Annuellement, ou si saignement.", interpretation: "Surveiller." },
+      { test: "Créatininémie/ClCr", frequency: "Annuellement. Tous les 3-6 mois si ClCr 30-49 mL/min ou âge >75 ans.", interpretation: "Arrêter si ClCr < 30 mL/min. Ajuster dose si ClCr 30-50 mL/min et risque hémorragique." }
+    ]
+  },
+  {
+    anticoagulant: "Rivaroxaban (Xarelto®)",
+    tests: [
+      { test: "NFS", frequency: "Annuellement, ou si saignement.", interpretation: "Surveiller." },
+      { test: "Créatininémie/ClCr", frequency: "Annuellement. Tous les 3-6 mois si ClCr 30-49 mL/min ou âge >75 ans.", interpretation: "Arrêter si ClCr < 15 mL/min (certains disent <30). Prudence et ajustement/éviter si ClCr 15-49 mL/min." },
+      { test: "Bilan hépatique (ASAT, ALAT, Bili)", frequency: "Annuellement, ou si symptômes.", condition: "Insuffisance hépatique", interpretation: "Arrêter si Child-Pugh B ou C modérée à sévère, ou maladie hépatique avec coagulopathie." }
+    ]
+  },
+  {
+    anticoagulant: "Apixaban (Eliquis®)",
+    tests: [
+      { test: "NFS", frequency: "Annuellement, ou si saignement.", interpretation: "Surveiller." },
+      { test: "Créatininémie/ClCr", frequency: "Annuellement. Plus fréquemment si ClCr limite ou âge >75 ans.", interpretation: "Prudence et ajustement de dose si ClCr 15-29 mL/min (2.5 mg BID). Éviter si ClCr <15 mL/min." },
+      { test: "Bilan hépatique", frequency: "Annuellement, ou si symptômes.", condition: "Insuffisance hépatique", interpretation: "Arrêter si Child-Pugh C sévère. Prudence si Child-Pugh B modérée." }
+    ]
+  },
+  {
+    anticoagulant: "Edoxaban (Lixiana®)",
+    tests: [
+      { test: "NFS", frequency: "Annuellement, ou si saignement.", interpretation: "Surveiller." },
+      { test: "Créatininémie/ClCr", frequency: "Annuellement. Plus fréquemment si ClCr limite ou âge >75 ans.", interpretation: "Ajuster dose à 30 mg OD si ClCr 15-50 mL/min. Éviter si ClCr <15 mL/min ou >95 mL/min (moins d'efficacité dans certaines études FA, prudence EP)." },
+      { test: "Bilan hépatique", frequency: "Annuellement, ou si symptômes.", condition: "Insuffisance hépatique", interpretation: "Prudence si insuffisance hépatique modérée. Éviter si sévère." }
+    ]
+  }
 ];

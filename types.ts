@@ -1,13 +1,13 @@
+export type PatientType = 'non-pregnant' | 'pregnant' | 'active-cancer' | '';
 
-export type PatientType = 'non-pregnant' | 'pregnant' | '';
-
-export type Step = 
-  | 'home' 
-  | 'clinical-assessment' 
-  | 'diagnostic-recommendations' 
-  | 'risk-stratification' 
-  | 'treatment-recommendations' 
-  | 'disposition';
+export type Step =
+  | 'home'
+  | 'clinical-assessment'
+  | 'diagnostic-recommendations'
+  | 'risk-stratification'
+  | 'treatment-recommendations'
+  | 'disposition'
+  | 'follow-up-monitoring';
 
 export type DdimerUnit = 'mg/L' | 'µg/L' | 'ng/mL';
 
@@ -48,6 +48,9 @@ export interface ClinicalData {
   peConfirmed: boolean;
   bleedingRisk: boolean; // High bleeding risk
   renalFunction: 'normal' | 'moderate' | 'severe' | ''; // ClCr based
+  peProvoked: boolean;
+  peProvokedFactorDetails: string; // e.g., surgery, immobilization, cancer, pregnancy, hormones, persistent minor factor
+
   // Hestia criteria
   hemodynamicallyUnstable: boolean; // For Hestia specifically (PAS <100 or HR >100)
   thrombolysisNeeded: boolean;
@@ -60,6 +63,12 @@ export interface ClinicalData {
   liverImpairment: boolean; // Severe (Child-Pugh C)
   pregnantHestia: boolean; // For Hestia, pregnancy is a criterion
   hitHistory: boolean; // History of HIT
+
+  // Cancer pathway specific
+  chestXrayPerformed: boolean;
+  chestXraySuggestsOtherDiagnosis: boolean | null; // null for not answered, true for yes, false for no
+  ctpaPerformedCancer: boolean;
+  ctpaPositiveCancer: boolean | null;
 }
 
 export interface Results {
@@ -69,7 +78,7 @@ export interface Results {
   percPositive: boolean;
   yearsCriteriaMet: number;
   yearsCategory: string;
-  ddimerThreshold: number;
+  ddimerThreshold: number; // Stored in mg/L FEU
   hestiaScore: number;
   outpatientEligible: boolean;
   peRiskLevel: 'low' | 'intermediate' | 'high' | '';
@@ -79,5 +88,10 @@ export interface FormItem<T = boolean> {
   key: keyof ClinicalData;
   label: string;
   points?: number;
-  auto?: (data: ClinicalData) => T; 
+  auto?: (data: ClinicalData) => T;
+}
+
+export interface AnticoagulantMonitoringInfo {
+  anticoagulant: string;
+  tests: { test: string; frequency: string; condition?: string; interpretation: string; }[];
 }
