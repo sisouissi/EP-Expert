@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { ChevronRight, ChevronLeft, Heart, Stethoscope, AlertTriangle, CheckCircle, XCircle, Info, Calculator, FileText, Home, User, Baby, Activity, ShieldCheck, UserCheck, PlusCircle, ShieldAlert, RadioTower, TestTube2, Pill, Clock, HelpCircle, CalendarDays, ListChecks, Microscope, Printer, BookOpen, X } from 'lucide-react';
+import { ChevronRight, ChevronLeft, Heart, Stethoscope, AlertTriangle, CheckCircle, XCircle, Info, Calculator, FileText, Home, User, Baby, Activity, ShieldCheck, UserCheck, PlusCircle, ShieldAlert, RadioTower, TestTube2, Pill, Clock, HelpCircle, CalendarDays, ListChecks, Microscope, Printer, BookOpen, X, BookMarked } from 'lucide-react'; // Added BookMarked for references
 import { ClinicalData, Results, PatientType, Step, FormItem, AnticoagulantMonitoringInfo, Abbreviation } from './types';
 import { INITIAL_CLINICAL_DATA, INITIAL_RESULTS, DDIMER_UNITS, WELLS_CRITERIA_ITEMS, PERC_CRITERIA_ITEMS, YEARS_CRITERIA_ITEMS, HESTIA_CRITERIA_ITEMS, GENDER_OPTIONS, CTPA_FINDINGS_OPTIONS, RENAL_FUNCTION_OPTIONS, ANTICOAGULANT_OPTIONS, TREATMENT_DOSING, TREATMENT_DURATION_GUIDELINES, MONITORING_DATA, ABBREVIATIONS_LIST } from './constants';
 import { Input, Select, Checkbox } from './components/shared/FormElements';
@@ -13,6 +13,7 @@ const App: React.FC = () => {
   const [clinicalData, setClinicalData] = useState<ClinicalData>(INITIAL_CLINICAL_DATA);
   const [results, setResults] = useState<Results>(INITIAL_RESULTS);
   const [showAbbreviationsModal, setShowAbbreviationsModal] = useState<boolean>(false);
+  const [showReferencesModal, setShowReferencesModal] = useState<boolean>(false);
 
 
   const resetState = useCallback(() => {
@@ -24,6 +25,7 @@ const App: React.FC = () => {
     setPatientType('');
     setCurrentStep('home');
     setShowAbbreviationsModal(false);
+    setShowReferencesModal(false);
   }, []);
 
   const calculateScores = useCallback(() => {
@@ -469,6 +471,8 @@ const App: React.FC = () => {
   };
 
   const toggleAbbreviationsModal = () => setShowAbbreviationsModal(!showAbbreviationsModal);
+  const toggleReferencesModal = () => setShowReferencesModal(!showReferencesModal);
+
 
   const renderHome = () => (
     <div className="max-w-5xl mx-auto animate-fadeIn px-4">
@@ -1441,6 +1445,42 @@ const App: React.FC = () => {
       </div>
     );
   };
+  
+  const renderReferencesModal = () => {
+    if (!showReferencesModal) return null;
+
+    const referencesHTML = `
+      <ol class="list-decimal list-inside space-y-3 text-sm text-slate-700">
+        <li><a href="https://academic.oup.com/eurheartj/article-pdf/41/4/543/34306708/ehz405.pdf" target="_blank" rel="noopener noreferrer" class="text-sky-600 hover:text-sky-800 hover:underline">2019 ESC Guidelines for the diagnosis and management of acute pulmonary embolism developed in collaboration with the European Respiratory Society (ERS): The Task Force for the diagnosis and management of acute pulmonary embolism of the European Society of Cardiology. <em>European Heart Journal</em>, Volume 41, Issue 4, 21 January 2020, Pages 543–603,</a></li>
+        <li><a href="https://wa.kaiserpermanente.org/static/pdf/public/guidelines/pulmonary-embolism.pdf" target="_blank" rel="noopener noreferrer" class="text-sky-600 hover:text-sky-800 hover:underline">Pulmonary Embolism Diagnosis &amp; Treatment Guideline. Kaiser Permanente Washington (KPWA)</a></li>
+        <li><a href="https://ashpublications.org/bloodadvances/article-pdf/4/19/4693/2223632/blooda-31203-main.pdf" target="_blank" rel="noopener noreferrer" class="text-sky-600 hover:text-sky-800 hover:underline">American Society of Hematology 2020 Guidelines for Management of Venous Thromboembolism: Treatment of Deep Vein Thrombosis and Pulmonary Embolism. <em>Blood Adv</em>(2020) 4 (19): 4693–4738.</a></li>
+        <li><a href="https://www.nejm.org/doi/pdf/10.1056/NEJMcp2116489" target="_blank" rel="noopener noreferrer" class="text-sky-600 hover:text-sky-800 hover:underline">Pulmonary Embolism. N Engl J Med&nbsp;2022;387:45-57</a></li>
+        <li><a href="https://cdn2.splf.fr/wp-content/uploads/2020/07/recos-veineuse-thromboembolique.pdf" target="_blank" rel="noopener noreferrer" class="text-sky-600 hover:text-sky-800 hover:underline">Recommandations de bonne pratique pour la prise en charge de la maladie veineuse thromboembolique chez l’adulte. SPLF Juillet 2019</a></li>
+      </ol>
+    `;
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 animate-fadeIn">
+        <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] flex flex-col">
+          <div className="flex justify-between items-center p-5 border-b border-slate-200">
+            <h3 className="text-xl font-semibold text-slate-700 flex items-center"><BookMarked size={24} className="mr-3 text-sky-600"/>Références Principales</h3>
+            <button onClick={toggleReferencesModal} className="text-slate-400 hover:text-slate-600 transition-colors">
+              <X size={24} />
+            </button>
+          </div>
+          <div className="p-6 overflow-y-auto" dangerouslySetInnerHTML={{ __html: referencesHTML }}>
+          </div>
+           <div className="p-4 border-t border-slate-200 text-right">
+            <button 
+                onClick={toggleReferencesModal} 
+                className="px-5 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700 font-medium transition-colors text-sm">
+                Fermer
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
 
   const renderCurrentStep = () => {
@@ -1495,6 +1535,13 @@ const App: React.FC = () => {
                         <BookOpen size={16} className="mr-1.5"/> Abréviations
                     </button>
                     <button 
+                        onClick={toggleReferencesModal} 
+                        title="Afficher les références"
+                        className="flex items-center text-sm text-indigo-600 hover:text-indigo-800 font-medium py-2 px-3 bg-indigo-100 hover:bg-indigo-200 rounded-lg transition-colors"
+                    >
+                        <BookMarked size={16} className="mr-1.5"/> Références
+                    </button>
+                    <button 
                         onClick={resetState} 
                         title="Commencer un nouveau cas"
                         className="flex items-center text-sm text-sky-600 hover:text-sky-800 font-medium py-2 px-3 bg-sky-100 hover:bg-sky-200 rounded-lg transition-colors"
@@ -1508,13 +1555,10 @@ const App: React.FC = () => {
         {renderCurrentStep()}
       </main>
       {renderAbbreviationsModal()}
+      {renderReferencesModal()}
        <footer className="text-center text-xs text-slate-500 mt-8 py-6 border-t border-slate-200 px-4">
         <p className="mb-1">Application développée par Dr Zouhair Souissi © 2025 PE-Expert.</p>
-        <p className="mb-1">
-            Inspiré par les recommandations ESC 2019, CHEST, ASH, et les directives Kaiser Permanente (2022).
-             Exemple de référence générale : <a href="https://www.annemergmed.com/article/S0196-0644(23)00033-1/pdf" target="_blank" rel="noopener noreferrer" className="text-sky-600 hover:text-sky-800 hover:underline">Managing Pulmonary Embolism. Ann Emerg Med. 2023.</a>
-        </p>
-        
+        <p>Cet outil est destiné à aider les professionnels de santé et ne remplace en aucun cas le jugement clinique. Les informations fournies doivent être vérifiées et adaptées au contexte clinique de chaque patient.</p>
       </footer>
     </div>
   );
